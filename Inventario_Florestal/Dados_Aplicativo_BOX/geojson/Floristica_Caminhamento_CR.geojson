@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "name": "Floristica_Caminhamento_CR",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.607861161232,
+          -20.318145208200754,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "LOCALIDADE_REFERENCIA": "dfnzgd",
+        "TIPO_DE_REGISTRO": "admgdm",
+        "GPS": "dgmg",
+        "FENOLOGIA": "gdzmm",
+        "HABITAT": "gdzm",
+        "NUMEROS_DE_INDIVIDUOS": "467",
+        "ESPECIE": "gkxhfkm",
+        "_id": "ponto_1784206742056_3wrav66n4",
+        "_data_coleta": "2026-07-16T12:59:02.056Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

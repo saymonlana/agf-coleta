@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "name": "Caracterizacao_CR",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.607928216457374,
+          -20.31810496308625,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "PARCELA": "dndg",
+        "HISTORICO_USO": "dagmgs",
+        "COBER_VEGE_VIVA_SOLO": "gdmfg",
+        "TIPO_SUBSTRATO": "gmgfm",
+        "GEOAMBIENTE": "gxcmf",
+        "ESPECIES_LENHOSAS": "gxcmhfm",
+        "OBSERVACAO": "fmhfbmh ",
+        "_id": "ponto_1784206725984_fb6lr461i",
+        "_data_coleta": "2026-07-16T12:58:45.984Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

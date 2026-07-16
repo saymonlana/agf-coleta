@@ -1,0 +1,142 @@
+{
+  "projeto": {
+    "id": "paebm",
+    "nome": "PAEBM - Agua e Esgoto",
+    "descricao": "Pesquisa sobre Abastecimento de Agua e Esgoto de Base Municipal",
+    "municipio": "Santo Antonio do Grama - MG"
+  },
+  "camadas": {
+    "questionario": {
+      "arquivo": "Questionario_PAEBM_SAG.json",
+      "nome": "Questionario PAEBM",
+      "campos_principais": [
+        "CODIGO",
+        "STATUS_DA_PESQUISA",
+        "MUNICIPIO",
+        "ENDERECO_COMPLETO",
+        "BAIRRO_LOCALIDADE",
+        "NOME_DO_ENTREVISTADO",
+        "NOME_DO_PROPRIETARIO",
+        "TIPO_DE_USO_DO_IMOVEL",
+        "QUANTAS_PESSOAS_MORAM_NA_RESIDENCIA",
+        "ENTREVISTADOR",
+        "DATA"
+      ],
+      "campos_formulario": [
+        {
+          "nome": "STATUS_DA_PESQUISA",
+          "label": "Status da Pesquisa",
+          "tipo": "lista",
+          "obrigatorio": true,
+          "opcoes": ["Aplicado", "Ausente", "Recusado", "Ainda Voltar"]
+        },
+        {
+          "nome": "NOME_DO_ENTREVISTADO",
+          "label": "Nome do Entrevistado",
+          "tipo": "texto",
+          "obrigatorio": true
+        },
+        {
+          "nome": "ENDERECO_COMPLETO",
+          "label": "Endereco Completo",
+          "tipo": "texto",
+          "obrigatorio": true
+        },
+        {
+          "nome": "NOME_DO_PROPRIETARIO",
+          "label": "Nome do Proprietario",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "TIPO_DE_USO_DO_IMOVEL",
+          "label": "Tipo de Uso do Imovel",
+          "tipo": "lista",
+          "obrigatorio": true,
+          "opcoes": ["Residencial", "Comercial", "Misto", "Outro"]
+        },
+        {
+          "nome": "QUANTAS_PESSOAS_MORAM_NA_RESIDENCIA",
+          "label": "Quantas pessoas moram na residencia",
+          "tipo": "numero",
+          "obrigatorio": true
+        },
+        {
+          "nome": "ABASTECIMANETO_DE_AGUA",
+          "label": "Abastecimento de Agua",
+          "tipo": "lista",
+          "obrigatorio": false,
+          "opcoes": ["Rede", "Poco", "Carro-pipa", "Outro"]
+        },
+        {
+          "nome": "FONTE_DE_ABASTECIMENTO",
+          "label": "Fonte de Abastecimento",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "AGUA_TRATADA",
+          "label": "Agua Tratada",
+          "tipo": "lista",
+          "obrigatorio": false,
+          "opcoes": ["Sim", "Nao"]
+        },
+        {
+          "nome": "CURSO_DAGUA",
+          "label": "Curso d'Agua",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "ESTIMATIVA_DE_CONSUMO_DE_AGUA",
+          "label": "Estimativa de Consumo de Agua",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "COLETA_DE_RESIDUOS_SOLIDOS",
+          "label": "Coleta de Residuos Solidos",
+          "tipo": "lista",
+          "obrigatorio": false,
+          "opcoes": ["Sim", "Nao"]
+        },
+        {
+          "nome": "TIPO_DE_DESTINACAO_DO_LIXO",
+          "label": "Tipo de Destinacao do Lixo",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "ANIMAL_DOMESTICO",
+          "label": "Animal Domestico",
+          "tipo": "lista",
+          "obrigatorio": false,
+          "opcoes": ["Sim", "Nao"]
+        },
+        {
+          "nome": "OBSERVACOES",
+          "label": "Observacoes",
+          "tipo": "textarea",
+          "obrigatorio": false
+        }
+      ]
+    },
+    "animais_domesticos": {
+      "arquivo": "Animais_Domesticos_PAEBM_SAG.json",
+      "nome": "Animais Domesticos"
+    },
+    "pontos": {
+      "arquivo": "Pontos_Questionario_PAEBM_SAG.json",
+      "nome": "Pontos do Questionario"
+    },
+    "questionarios_realizados": {
+      "arquivo": "Questionarios_Realizados_AGF_PAEBM_SAG.json",
+      "nome": "Questionarios Realizados AGF"
+    }
+  },
+  " limites": {
+    "limite_sag": "Limite_SAG.json",
+    "limite_mg": "Limite_MG.json",
+    "centro_urbano": "Centro_Urbano.json"
+  }
+}

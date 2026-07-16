@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "name": "Caracterizacao_FESD",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.60810256004334,
+          -20.318024472825872,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "PARCELA": "zvngxcv",
+        "USO_PREVIO": "fzng",
+        "NUMERO_ESTRATOS": "vcznxbc",
+        "EPIFITAS": "Ausente",
+        "ORQUIDEAS": "Poucas",
+        "BROMELIAS": "Ausente",
+        "MUSGOS_LIQUENS": "Ausente",
+        "SERRAPILHEIRA": "Rala",
+        "TREPADEIRAS_LENHOSAS": "Poucas",
+        "TREPADEIRAS_HERBACEA": "Moderado",
+        "DENSIDADE_DE_ARBUSTOS": "Moderado",
+        "RELEVO": "cgmnxfh",
+        "ANTROPIZACAO": "czmnxbc",
+        "OBSERVACOES": "bxc mbv",
+        "_id": "ponto_1784206694312_qo5oowmzm",
+        "_data_coleta": "2026-07-16T12:58:14.312Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

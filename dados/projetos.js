@@ -1,0 +1,3 @@
+// Dados gerados automaticamente - NAO EDITAR
+// Fonte: projetos.json
+var DADOS_PROJETOS = {"projetos": [{"id": "paebm", "nome": "PAEBM - SAG", "arquivo": "Questionario_PAEBM_SAG.json", "total_registros": 785, "camadas": ["Questionario_PAEBM_SAG", "Moradores_PAEBM_SAG", "Animais_Domesticos_PAEBM_SAG", "Animais_Silvestres_Exoticos_PAEBM_SAG", "Producao_Agropecuaria_PAEBM_SAG"]}, {"id": "inventario", "nome": "Inventario Florestal", "arquivo": "config_inventario.js", "total_registros": 0, "camadas": ["Censo", "Parcela_Arboreo", "Parcela_Arbustivo", "Parcela_Herbaceo", "Parcela_Arbustivo_CR", "Parcela_Herbaceo_CR", "Caracterizacao_FESD", "Caracterizacao_Cerrado", "Caracterizacao_CR", "Floristica_Caminhamento_CR"]}]};

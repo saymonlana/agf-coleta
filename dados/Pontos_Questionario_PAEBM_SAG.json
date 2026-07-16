@@ -1,0 +1,1524 @@
+{
+  "nome": "Pontos_Questionario_PAEBM_SAG",
+  "total_registros": 69,
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679209,
+          2.789684
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "1",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679069,
+          2.789685
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "2",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678952,
+          2.789685
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "3",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678827,
+          2.789686
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "4",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678734,
+          2.789687
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "5",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678586,
+          2.789686
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "6",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678508,
+          2.789687
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "7",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678422,
+          2.789687
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "8",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679708,
+          2.78974
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "9",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.67963,
+          2.789741
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "10",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679576,
+          2.789742
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "11",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679506,
+          2.789742
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "12",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679444,
+          2.789744
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "13",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679358,
+          2.789744
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "14",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679257,
+          2.789746
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "15",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.67921,
+          2.789744
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "16",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679163,
+          2.789742
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "17",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679131,
+          2.789741
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "18",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.6791,
+          2.78974
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "19",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679076,
+          2.789738
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "20",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679068,
+          2.789738
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "21",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679036,
+          2.789737
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "22",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678887,
+          2.789731
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "23",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678823,
+          2.789728
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "24",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678722,
+          2.789727
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "25",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678565,
+          2.789725
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "26",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678471,
+          2.789723
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "27",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678377,
+          2.789722
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "28",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678307,
+          2.789721
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "29",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.67662,
+          2.78974
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "30",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676768,
+          2.789741
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "31",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676859,
+          2.789733
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "32",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.67657,
+          2.789729
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "33",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676468,
+          2.78973
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "34",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676168,
+          2.789715
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "35",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676137,
+          2.789714
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "36",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676082,
+          2.789713
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "37",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676057,
+          2.789709
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "38",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675705,
+          2.789704
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "39",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675328,
+          2.789694
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "40",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.673804,
+          2.78968
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "41",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.673655,
+          2.78968
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "42",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675494,
+          2.789673
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "43",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675509,
+          2.789672
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "44",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675548,
+          2.789671
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "45",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675578,
+          2.789669
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "46",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675946,
+          2.789674
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "47",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675922,
+          2.789672
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "48",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675898,
+          2.78967
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "49",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675859,
+          2.789668
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "50",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675617,
+          2.789668
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "51",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675656,
+          2.789667
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "52",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.67582,
+          2.789667
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "53",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.677005,
+          2.789696
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "54",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.678143,
+          2.789693
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "55",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.680279,
+          2.789717
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "56",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679762,
+          2.78968
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "57",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679761,
+          2.789677
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "58",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.679427,
+          2.78968
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "59",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.676293,
+          2.789687
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "60",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.67178,
+          2.789636
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "61",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.675429,
+          2.789665
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "62",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.654667,
+          2.789316
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "63",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.654769,
+          2.789317
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "64",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.654855,
+          2.789318
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "65",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.656224,
+          2.789339
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "66",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.640489,
+          2.789255
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "67",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.641026,
+          2.789253
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "68",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "coordinates": [
+          -38.640568,
+          2.789233
+        ],
+        "type": "Point",
+        "geometries": null
+      },
+      "properties": {
+        "Name": "69",
+        "FolderPath": "Cadastro SAG.kmz/Cadastro SAG/Prioritárias",
+        "SymbolID": 6,
+        "AltMode": -1,
+        "Base": 0.0,
+        "Snippet": " ",
+        "PopupInfo": " ",
+        "HasLabel": -1,
+        "LabelID": 0
+      }
+    }
+  ]
+}

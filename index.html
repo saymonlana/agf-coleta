@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0D4A35">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>AGF Coleta</title>
+    
+    <link rel="icon" type="image/jpeg" href="img/logo.jpg">
+    <link rel="apple-touch-icon" href="img/logo.jpg">
+    
+    <!-- Leaflet (alternativa gratuita ao Google Maps) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Proj4js para conversão de coordenadas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    
+    <!-- CSS do App -->
+    <link rel="stylesheet" href="css/style.css?v=2">
+    
+    <!-- Manifest PWA -->
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+
+    <!-- ========== TELA DE LOGIN ========== -->
+    <div id="tela-login" class="tela ativa">
+        <div class="login-container">
+            <div class="login-logo">
+                <img src="img/logo.jpg" alt="Agroflor">
+            </div>
+            <h1 class="login-titulo">AGF Coleta</h1>
+            <p class="login-subtitulo">Sistema de Coleta de Dados em Campo</p>
+            
+            <form id="form-login" onsubmit="return handleLogin(event)">
+                <div class="campo-form">
+                    <label for="email">Seu Nome</label>
+                    <input type="text" id="email" placeholder="Nome do tecnico" required>
+                </div>
+                
+                <button type="submit" class="btn-principal">Entrar</button>
+            </form>
+            
+            <div class="login-separador">
+                <span>ou</span>
+            </div>
+            
+            <button type="button" id="btn-login-box" class="btn-box">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                Entrar com Box
+            </button>
+            
+            <div class="login-offline">
+                <p>Funciona offline apos primeiro acesso</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TELA DE PROJETOS ========== -->
+    <div id="tela-projetos" class="tela">
+        <header class="header">
+            <div class="header-logo">
+                <img src="img/logo.jpg" alt="Agroflor">
+            </div>
+            <div class="header-info">
+                <h1>AGF Coleta</h1>
+                <span>Escolha um projeto</span>
+            </div>
+            <button id="btn-logout" class="btn-icon" title="Sair">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+            </button>
+        </header>
+        
+        <!-- Configuracao do Token Box -->
+        <div class="token-config" id="token-config">
+            <div class="token-status" id="token-status">Token nao configurado</div>
+            <div class="token-input-row">
+                <input type="text" id="input-token-box" placeholder="Cole o Developer Token do Box aqui" autocomplete="off">
+                <button id="btn-salvar-token" class="btn-pequeno">Salvar</button>
+                <button id="btn-limpar-token" class="btn-pequeno btn-limpar">Limpar</button>
+            </div>
+        </div>
+        
+        <div class="lista-projetos" id="lista-projetos">
+            <!-- Projetos são carregados dinamicamente -->
+            <div class="projeto-card" data-projeto="paebm">
+                <div class="projeto-icone">🏠</div>
+                <div class="projeto-info">
+                    <h3>PAEBM - SAG</h3>
+                    <p>Santo Antônio do Grama - MG</p>
+                    <span class="projeto-status" id="status-paebm">0 pontos coletados</span>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+            
+            <div class="projeto-card" data-projeto="inventario">
+                <div class="projeto-icone">🌳</div>
+                <div class="projeto-info">
+                    <h3>Inventário Florestal</h3>
+                    <p>Coleta de dados florestais</p>
+                    <span class="projeto-status" id="status-inventario">0 registros coletados</span>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+            
+            <div class="projeto-card" data-projeto="fauna">
+                <div class="projeto-icone">🦎</div>
+                <div class="projeto-info">
+                    <h3>Coleta de Fauna</h3>
+                    <p>Em breve</p>
+                    <span class="projeto-status">Em configuração</span>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+            
+            <div class="projeto-card novo-projeto" id="btn-novo-projeto">
+                <div class="projeto-icone">➕</div>
+                <div class="projeto-info">
+                    <h3>Novo Projeto</h3>
+                    <p>Linkar pasta do QGIS</p>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== TELA DO MAPA ========== -->
+    <div id="tela-mapa" class="tela">
+        <header class="header-mapa">
+            <button id="btn-voltar" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-mapa-info">
+                <h2 id="titulo-projeto">PAEBM</h2>
+                <span id="contador-pontos">0 registros</span>
+                <span id="coordenadas-mapa" class="coordenadas-mapa"></span>
+            </div>
+            <button id="btn-sync" class="btn-icon btn-sync" title="Sincronizar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </button>
+            <button id="btn-limpar-dados" class="btn-icon btn-limpar-mapa" title="Limpar dados locais" onclick="limparDadosLocais()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </button>
+        </header>
+        
+        <!-- Botao de Camadas (Inventario) -->
+        <button id="btn-camadas" class="btn-camadas" title="Camadas" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5"/>
+                <path d="M2 12l10 5 10-5"/>
+            </svg>
+        </button>
+        
+        <!-- Painel de Camadas -->
+        <div id="painel-camadas" class="painel-camadas" style="display: none;">
+            <div class="painel-camadas-header">
+                <h3>Camadas</h3>
+                <button id="btn-fechar-camadas" class="btn-fechar-camadas">&times;</button>
+            </div>
+            <div class="painel-camadas-lista" id="lista-camadas">
+                <!-- Camadas serao preenchidas dinamicamente -->
+            </div>
+        </div>
+        
+        <div id="mapa">
+            <!-- Crosshair (alvo no centro do mapa) -->
+            <div id="crosshair" class="crosshair" style="display: none;">
+                <svg viewBox="0 0 100 100" width="60" height="60">
+                    <circle cx="50" cy="50" r="20" fill="none" stroke="white" stroke-width="3"/>
+                    <circle cx="50" cy="50" r="2" fill="white"/>
+                    <line x1="50" y1="20" x2="50" y2="35" stroke="white" stroke-width="3"/>
+                    <line x1="50" y1="65" x2="50" y2="80" stroke="white" stroke-width="3"/>
+                    <line x1="20" y1="50" x2="35" y2="50" stroke="white" stroke-width="3"/>
+                    <line x1="65" y1="50" x2="80" y2="50" stroke="white" stroke-width="3"/>
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Botao Minha Localizacao (estilo Google Maps) -->
+        <button id="btn-minha-localizacao" class="btn-localizacao" title="Minha localizacao">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                <circle cx="12" cy="12" r="3" fill="#666"/>
+                <path d="M12 2v5M12 17v5M2 12h5M17 12h5"/>
+            </svg>
+        </button>
+        
+        <!-- Botao Coletar -->
+        <button id="btn-coletar" class="btn-coletar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Coletar Ponto
+        </button>
+    </div>
+
+    <!-- ========== TELA DE COLETA ========== -->
+    <div id="tela-coleta" class="tela">
+        <header class="header">
+            <button id="btn-voltar-mapa" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1>Novo Ponto</h1>
+                <span id="coordenadas-gps">Lat: --- | Lon: ---</span>
+                <span id="coordenadas-utm" class="coordenadas-utm"></span>
+            </div>
+            <button id="btn-salvar" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+        
+        <form id="form-coleta" class="form-coleta">
+            <!-- Campos são gerados dinamicamente conforme o projeto -->
+            <div id="campos-formulario">
+                <!-- Exemplo de campos (será preenchido dinamicamente) -->
+            </div>
+            
+            <div class="form-foto">
+                <label>Foto (opcional)</label>
+                <button type="button" id="btn-tirar-foto" class="btn-foto">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                        <circle cx="12" cy="13" r="4"></circle>
+                    </svg>
+                    Tirar Foto
+                </button>
+                <div id="preview-foto" class="preview-foto"></div>
+                <input type="file" id="input-foto" accept="image/*" capture="environment" style="display: none;">
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== MODAL DE SYNC ========== -->
+    <!-- ========== MODAL REVISAO ========== -->
+    <div id="modal-revisao" class="modal">
+        <div class="modal-content modal-revisao">
+            <div class="revisao-cabecalho">
+                <h3>Revisar dados antes de enviar</h3>
+                <p id="revisao-resumo"></p>
+            </div>
+            <div id="revisao-lista" class="revisao-lista"></div>
+            <div class="revisao-rodape">
+                <button id="btn-cancelar-revisao" class="btn-secundario">Cancelar</button>
+                <button id="btn-confirmar-sync" class="btn-principal">Confirmar Envio</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL EXCLUSAO ========== -->
+    <div id="modal-exclusao" class="modal">
+        <div class="modal-content modal-revisao">
+            <div class="revisao-cabecalho">
+                <h3>Excluir dados coletados</h3>
+                <p id="exclusao-resumo"></p>
+                <label class="exclusao-todos-label">
+                    <input type="checkbox" id="exclusao-marcar-todos" checked> Marcar todos
+                </label>
+            </div>
+            <div id="exclusao-lista" class="revisao-lista"></div>
+            <div class="revisao-rodape">
+                <button id="btn-cancelar-exclusao" class="btn-secundario">Cancelar</button>
+                <button id="btn-confirmar-exclusao" class="btn-excluir">Excluir Selecionados</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL SYNC ========== -->
+    <div id="modal-sync" class="modal">
+        <div class="modal-content">
+            <div class="sync-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+            </div>
+            <h3 id="sync-titulo">Sincronizando...</h3>
+            <p id="sync-status">Enviando dados para o servidor</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="sync-progress"></div>
+            </div>
+            <button id="btn-fechar-sync" class="btn-principal" style="display: none;">Concluído</button>
+        </div>
+    </div>
+
+    <!-- ========== TOAST NOTIFICAÇÃO ========== -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Dados embutidos (para funcionar sem servidor) -->
+    <script src="dados/projetos.js"></script>
+    <script src="dados/config.js"></script>
+    <script src="dados/config_inventario.js"></script>
+    <script src="dados/Questionario_PAEBM_SAG.js"></script>
+    <script src="dados/Animais_Domesticos_PAEBM_SAG.js"></script>
+    <script src="dados/Moradores_PAEBM_SAG.js"></script>
+    <script src="dados/Animais_Silvestres_Exoticos_PAEBM_SAG.js"></script>
+    <script src="dados/Producao_Agropecuaria_PAEBM_SAG.js"></script>
+    <script src="dados/Centro_Urbano.js"></script>
+    
+    <!-- JavaScript do App -->
+    <script src="js/sync.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
+    <script src="js/map.js?v=2"></script>
+</body>
+</html>

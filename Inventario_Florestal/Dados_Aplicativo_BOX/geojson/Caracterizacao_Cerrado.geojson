@@ -1,0 +1,32 @@
+{
+  "type": "FeatureCollection",
+  "name": "Caracterizacao_Cerrado",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.60802477598191,
+          -20.318057171999204,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "PARCELA": "zvx nvc",
+        "ANALISE_PAISA_PRE_EX": "vz bc",
+        "PORCENT_COBER_HERBA_ARBUS": "vc bc",
+        "PORCENT_SOLO_EXPOSTO": " bcn b",
+        "PORCENT_COBERT_DO_SOLO_SERRAP": "bvmhfm",
+        "ANTROPIZACAO_DA_AREA_TIPO": "fsmhhf",
+        "ANTROPIZACAO_DA_AREA_INTENS": "hsfmhf",
+        "ANALISE_PAISAGEM_FITOFISIONOM": "hsmhf",
+        "OBSERVACOES": "shfmhf",
+        "_id": "ponto_1784206711272_5sycnym5n",
+        "_data_coleta": "2026-07-16T12:58:31.272Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

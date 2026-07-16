@@ -1,0 +1,43 @@
+{
+  "type": "FeatureCollection",
+  "name": "Parcela_Arbustivo",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.60843247175217,
+          -20.317838338938362,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "dfhm",
+        "LOCALIDADE": "mfd",
+        "USO_PREVIO": "sjfd",
+        "TAMANHO_DA_PARCELA": "dfghf",
+        "PARCELA": "fgsnhf",
+        "NUMERO": "gfmhf",
+        "FUSTE": "mxhf",
+        "ALTURA": "hfmhf",
+        "CAP": "xmfh",
+        "NOME_COMUM": "mh",
+        "FOTO": "gfgf",
+        "OBSERVACOES": "fgdjfh",
+        "NOME_CIENTIFICO": "fdhmhf",
+        "FAMILIA": "hfdmh",
+        "ORIGEM_NATU_EXO_NATIV": "Exótica",
+        "STATUS": "dyjy",
+        "COORD_X_VERT_A": "fgjhf",
+        "COORD_Y_VERT_A": "dfhmhf",
+        "USO_SOLO": "hfdmhf",
+        "_id": "ponto_1784206591281_r0fkeaul9",
+        "_data_coleta": "2026-07-16T12:56:31.281Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

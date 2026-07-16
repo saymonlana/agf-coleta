@@ -1,0 +1,17 @@
+{
+  "projetos": [
+    {
+      "id": "paebm",
+      "nome": "PAEBM - Agua e Esgoto",
+      "arquivo": "Questionario_PAEBM_SAG.json",
+      "total_registros": 785,
+      "camadas": [
+        "Questionario_PAEBM_SAG",
+        "Moradores_PAEBM_SAG",
+        "Animais_Domesticos_PAEBM_SAG",
+        "Animais_Silvestres_Exoticos_PAEBM_SAG",
+        "Producao_Agropecuaria_PAEBM_SAG"
+      ]
+    }
+  ]
+}

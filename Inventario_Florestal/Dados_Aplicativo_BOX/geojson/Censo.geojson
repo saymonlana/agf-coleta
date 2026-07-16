@@ -1,0 +1,129 @@
+{
+  "type": "FeatureCollection",
+  "name": "Censo",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::4326"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.608317136764526,
+          -20.31707910836666,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "w5rkjtye",
+        "LOCALIDADE": "yrkeyt",
+        "USO_PREVIO": "ryekey",
+        "NUMERO_GPS": "eyrkytk",
+        "NUMERO": "etyktuk",
+        "FUSTE": "yetkty",
+        "ALTURA": "ytkt",
+        "CAP": "dyktg",
+        "COPA_D1": "tkdtk",
+        "COPA_D2": "dyfkdg",
+        "NOME_VULGAR": "dyfkdg",
+        "OBSERVACOES": "dfkgh",
+        "FOTO": "dkg",
+        "EPIFITAS": "sktg",
+        "NOME_CIENTIFICO": "fdkghk",
+        "FAMILIA": "dg,j,",
+        "ORIGEM_NATU_EXO_NATIV": "Nativa",
+        "STATUS": "fjg,.j",
+        "COORD_X_VERT_A": "jfh,.hj",
+        "COORD_Y_VERT_A": "jh.,jh",
+        "USO_SOLO": "fsjky",
+        "_id": "ponto_1784164545183_ltnzwntx1",
+        "_data_coleta": "2026-07-16T01:15:45.183Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.607501745224006,
+          -20.316900325746012,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "xfhmzg",
+        "LOCALIDADE": "vznxgcn",
+        "USO_PREVIO": "vncgcn",
+        "NUMERO_GPS": "gxcmnhvcm",
+        "NUMERO": "vb,cn,nv",
+        "FUSTE": "vcnvcnx",
+        "ALTURA": "vcnxbn",
+        "CAP": "cxnbc",
+        "COPA_D1": "vngnx",
+        "COPA_D2": "cxmg",
+        "NOME_VULGAR": "ngcxng",
+        "OBSERVACOES": "vcnvcnx",
+        "FOTO": "gcxngn",
+        "EPIFITAS": "dghhbdv",
+        "NOME_CIENTIFICO": "fhdfhg",
+        "FAMILIA": "gnnhg",
+        "ORIGEM_NATU_EXO_NATIV": "Nativa",
+        "STATUS": "gmhfn",
+        "COORD_X_VERT_A": "gmxcm",
+        "COORD_Y_VERT_A": "cgxmcbm",
+        "USO_SOLO": "gcmx",
+        "_id": "ponto_1784203955374_6gov4cufa",
+        "_data_coleta": "2026-07-16T12:12:35.374Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.608778476715095,
+          -20.31765975080881,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "reykdyk",
+        "LOCALIDADE": "fjdyfkdy",
+        "USO_PREVIO": "gsjdfjms",
+        "NUMERO_GPS": "eyrkytk",
+        "NUMERO": "etyktuk",
+        "FUSTE": "ysrjdy",
+        "ALTURA": "ytkt",
+        "CAP": "sfjdfj",
+        "COPA_D1": "tkdtk",
+        "COPA_D2": "dyfkdg",
+        "NOME_VULGAR": "mgfhdm",
+        "OBSERVACOES": "hfmhtsjyj",
+        "FOTO": "dkg",
+        "EPIFITAS": "vnmdh",
+        "NOME_CIENTIFICO": "hfsmhmh",
+        "FAMILIA": "dg,j,",
+        "ORIGEM_NATU_EXO_NATIV": "Nativa",
+        "STATUS": "fjg,.j",
+        "COORD_X_VERT_A": "jfh,.hj",
+        "COORD_Y_VERT_A": "jh.,jh",
+        "USO_SOLO": "fsjky",
+        "_id": "ponto_1784206531065_5p3zrv9zr",
+        "_data_coleta": "2026-07-16T12:55:31.065Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

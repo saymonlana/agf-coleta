@@ -1,0 +1,42 @@
+{
+  "type": "FeatureCollection",
+  "name": "Parcela_Herbaceo_CR",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.60817229747772,
+          -20.31798422767997,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "bx ",
+        "LOCALIDADE": "fg x",
+        "USO_PREVIO": "b xbv",
+        "TAMANHO_DA_PARCELA": "b xbv",
+        "PARCELA": "bx nv",
+        "SUBPARCELA": "bxm c",
+        "NUMERO": "hmdgf",
+        "PORCENTAGEM_COBERTA_ESPECIE": "hgdfhn",
+        "NOME_COMUM": "fhmdh",
+        "FOTO": "hd mg",
+        "OBSERVACOES": " nbvx ",
+        "NOME_CIENTIFICO": "bv cnm",
+        "FAMILIA": "hfmhg",
+        "ORIGEM_NATU_EXO_NATI": "Nativa",
+        "STATUS": "dfhmhg",
+        "COORD_X_VART_A": "hfmhgd",
+        "COORD_Y_VART_A": "gfmh",
+        "USO_SOLO": "cmnxv",
+        "_id": "ponto_1784206667848_if2p1o7r0",
+        "_data_coleta": "2026-07-16T12:57:47.848Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}

@@ -1,0 +1,219 @@
+{
+  "Censo": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "RESPONSAVEL_DE_CAMPO": "str:255",
+      "IDENTIFICADOR_DE_CAMPO": "str:255",
+      "LOCALIDADE": "str:255",
+      "USO_PREVIO": "str:255",
+      "NUMERO_GPS": "str:255",
+      "NUMERO": "str:255",
+      "FUSTE": "str:255",
+      "ALTURA": "str:255",
+      "CAP": "str:255",
+      "COPA_D1": "str:255",
+      "COPA_D2": "str:255",
+      "NOME_VULGAR": "str:255",
+      "OBSERVACOES": "str:255",
+      "FOTO": "str:255",
+      "EPIFITAS": "str:255",
+      "NOME_CIENTIFICO": "str:255",
+      "FAMILIA": "str:255",
+      "ORIGEM_NATU_EXO_NATIV": "str:255",
+      "STATUS": "str:255",
+      "COORD_X_VERT_A": "str:255",
+      "COORD_Y_VERT_A": "str:255",
+      "USO_SOLO": "str:255"
+    }
+  },
+  "Parcela_Arboreo": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "RESPONSAVEL_DE_CAMPO": "str:255",
+      "IDENTIFICADOR_DE_CAMPO": "str:255",
+      "LOCALIDADE": "str:255",
+      "USO_PREVIO": "str:255",
+      "TAMANHO_DA_PARCELA": "str:255",
+      "PARCELA": "str:255",
+      "NUMERO": "str:255",
+      "FUSTE": "str:255",
+      "ALTURA": "str:255",
+      "CAP": "str:255",
+      "COPA_D1": "str:255",
+      "COPA_D2": "str:255",
+      "NOME_COMUM": "str:255",
+      "FOTO": "str:255",
+      "EPIFITAS": "str:255",
+      "OBSERVACOES": "str:255",
+      "NOME_CIENTIFICO": "str:255",
+      "FAMILIA": "str:255",
+      "ORIGEM_NATU_EXO_NATIV": "str:255",
+      "STATUS": "str:255",
+      "COORD_X_VERT_A": "str:255",
+      "COORD_Y_VERT_A": "str:255",
+      "USO_SOLO": "str:255"
+    }
+  },
+  "Parcela_Arbustivo": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "RESPONSAVEL_DE_CAMPO": "str:255",
+      "IDENTIFICADOR_DE_CAMPO": "str:255",
+      "LOCALIDADE": "str:255",
+      "USO_PREVIO": "str:255",
+      "TAMANHO_DA_PARCELA": "str:255",
+      "PARCELA": "str:255",
+      "NUMERO": "str:255",
+      "FUSTE": "str:255",
+      "ALTURA": "str:255",
+      "CAP": "str:255",
+      "NOME_COMUM": "str:255",
+      "FOTO": "str:255",
+      "OBSERVACOES": "str:255",
+      "NOME_CIENTIFICO": "str:255",
+      "FAMILIA": "str:255",
+      "ORIGEM_NATU_EXO_NATIV": "str:255",
+      "STATUS": "str:255",
+      "COORD_X_VERT_A": "str:255",
+      "COORD_Y_VERT_A": "str:255",
+      "USO_SOLO": "str:255"
+    }
+  },
+  "Parcela_Herbaceo": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "RESPONSAVEL_DE_CAMPO": "str:255",
+      "IDENTIFICADOR_DE_CAMPO": "str:255",
+      "LOCALIDADE": "str:255",
+      "USO_PREVIO": "str:255",
+      "TAMANHO_DA_PARCELA": "str:255",
+      "PARCELA": "str:255",
+      "NUMERO": "str:255",
+      "PORCENTAGEM_COBERTA_ESPECIE": "str:255",
+      "NOME_COMUM": "str:255",
+      "FOTO": "str:255",
+      "OBSERVACOES": "str:255",
+      "NOME_CIENTIFICO": "str:255",
+      "FAMILIA": "str:255",
+      "ORIGEM_NATU_EXO_NATIV": "str:255",
+      "STATUS": "str:255",
+      "COORD_X_VERT_A": "str:255",
+      "COORD_Y_VERT_A": "str:255",
+      "USO_SOLO": "str:255"
+    }
+  },
+  "Parcela_Arbustivo_CR": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "RESPONSAVEL_DE_CAMPO": "str:255",
+      "IDENTIFICADOR_DE_CAMPO": "str:255",
+      "LOCALIDADE": "str:255",
+      "USO_PREVIO": "str:255",
+      "TAMANHO_DA_PARCELA": "str:255",
+      "PARCELA": "str:255",
+      "NUMERO": "str:255",
+      "FUSTE": "str:255",
+      "ALTURA": "str:255",
+      "CAP": "str:255",
+      "COPA_D1": "str:255",
+      "COPA_D2": "str:255",
+      "NOME_COMUM": "str:255",
+      "FOTO": "str:255",
+      "OBSERVACOES": "str:255",
+      "NOME_CIENTIFICO": "str:255",
+      "FAMILIA": "str:255",
+      "ORIGEM_NATU_EXO_NATIV": "str:255",
+      "STATUS": "str:255",
+      "COORD_X_VERT_A": "str:255",
+      "COORD_Y_VERT_A": "str:255",
+      "USO_SOLO": "str:255"
+    }
+  },
+  "Parcela_Herbaceo_CR": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "RESPONSAVEL_DE_CAMPO": "str:255",
+      "IDENTIFICADOR_DE_CAMPO": "str:255",
+      "LOCALIDADE": "str:255",
+      "USO_PREVIO": "str:255",
+      "TAMANHO_DA_PARCELA": "str:255",
+      "PARCELA": "str:255",
+      "SUBPARCELA": "str:255",
+      "NUMERO": "str:255",
+      "PORCENTAGEM_COBERTA_ESPECIE": "str:255",
+      "NOME_COMUM": "str:255",
+      "FOTO": "str:255",
+      "OBSERVACOES": "str:255",
+      "NOME_CIENTIFICO": "str:255",
+      "STATUS": "str:255",
+      "COORD_X_VART_A": "str:255",
+      "COORD_Y_VART_A": "str:255",
+      "USO_SOLO": "str:255"
+    }
+  },
+  "Caracterizacao_FESD": {
+    "geometry": "3D Point",
+    "fields": {
+      "PARCELA": "str:255",
+      "DATA": "str:255",
+      "USO_PREVIO": "str:255",
+      "NUMERO_ESTRATOS": "str:255",
+      "EPIFITAS": "str:255",
+      "ORQUIDEAS": "str:255",
+      "BROMELIAS": "str:255",
+      "MUSGOS_LIQUENS": "str:255",
+      "SERRAPILHEIRA": "str:255",
+      "TREPADEIRAS_LENHOSAS": "str:255",
+      "TREPADEIRAS_HERBACEA": "str:255",
+      "DENSIDADE_DE_ARBUSTOS": "str:255",
+      "RELEVO": "str:255"
+    }
+  },
+  "Caracterizacao_Cerrado": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "PARCELA": "str:255",
+      "ANALISE_PAISA_PRE_EX": "str:255",
+      "PORCENT_COBER_HERBA_ARBUS": "str:255",
+      "PORCENT_SOLO_EXPOSTO": "str:255",
+      "PORCENT_COBERT_DO_SOLO_SERRAP": "str:255",
+      "ANTROPIZACAO_DA_AREA_TIPO": "str:255",
+      "ANTROPIZACAO_DA_AREA_INTENS": "str:255",
+      "ANALISE_PAISAGEM_FITOFISIONOM": "str:255",
+      "OBSERVACAO": "str:255"
+    }
+  },
+  "Caracterizacao_CR": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "PARCELA": "str:255",
+      "HISTORICO_USO": "str:255",
+      "COBER_VEGE_VIVA_SOLO": "str:255",
+      "TIPO_SUBSTRATO": "str:255",
+      "GEOAMBIENTE": "str:255",
+      "ESPECIES_LENHOSAS": "str:255",
+      "OBSERVACAO": "str:255"
+    }
+  },
+  "Floristica_Caminhamento_CR": {
+    "geometry": "3D Point",
+    "fields": {
+      "DATA": "str:255",
+      "LOCALIDADE_REFERENCIA": "str:255",
+      "TIPO_DE_REGISTRO": "str:255",
+      "GPS": "str:255",
+      "FENOLOGIA": "str:255",
+      "HABITAT": "str:255",
+      "NUMEROS_DE_INDIVIDUOS": "str:255",
+      "ESPECIE": "str:255"
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "type": "FeatureCollection",
+  "name": "Parcela_Arboreo",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:EPSG::4326"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.60759562253953,
+          -20.31688523370789,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "tdjx",
+        "LOCALIDADE": "tdjxyfj",
+        "USO_PREVIO": "gjxfh",
+        "TAMANHO_DA_PARCELA": "gjfhj",
+        "PARCELA": "gjfgjd",
+        "NUMERO": "kfyhmkfy",
+        "FUSTE": "xgmhm",
+        "ALTURA": "hx,hf,",
+        "CAP": "fh,h,",
+        "COPA_D1": "fzdhfdh",
+        "COPA_D2": "fdgfxb",
+        "NOME_COMUM": "zcngn",
+        "FOTO": "fzhdgjh",
+        "EPIFITAS": "fzhfh",
+        "OBSERVACOES": "zngn",
+        "NOME_CIENTIFICO": "gngx",
+        "FAMILIA": "gngn",
+        "ORIGEM_NATU_EXO_NATIV": "Exótica",
+        "STATUS": "gmxgm",
+        "COORD_X_VERT_A": "xgmg",
+        "COORD_Y_VERT_A": "gcmgfm",
+        "USO_SOLO": "mfhx",
+        "_id": "ponto_1784203913973_mge5pj52e",
+        "_data_coleta": "2026-07-16T12:11:53.973Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -42.60852634906769,
+          -20.317783001793497,
+          0
+        ]
+      },
+      "properties": {
+        "DATA": "2026-07-16",
+        "RESPONSAVEL_DE_CAMPO": "Saymon",
+        "IDENTIFICADOR_DE_CAMPO": "yrsjdy",
+        "LOCALIDADE": "yjdh",
+        "USO_PREVIO": "fjdhf",
+        "TAMANHO_DA_PARCELA": "hfdjhg",
+        "PARCELA": "dhfjmh",
+        "NUMERO": "hdfjhd",
+        "FUSTE": "hfmh",
+        "ALTURA": "hmchg",
+        "CAP": "dhfjh",
+        "COPA_D1": "hmhg",
+        "COPA_D2": "hmhg",
+        "NOME_COMUM": "dhmhg",
+        "FOTO": "dfjh",
+        "EPIFITAS": "dhfjhg",
+        "OBSERVACOES": "dhjmhg",
+        "NOME_CIENTIFICO": "hdjgh",
+        "FAMILIA": "dhfjfh",
+        "ORIGEM_NATU_EXO_NATIV": "Nativa",
+        "STATUS": "hfdmhg",
+        "COORD_X_VERT_A": "hdmh",
+        "COORD_Y_VERT_A": "hfmhg",
+        "USO_SOLO": "rdjy",
+        "_id": "ponto_1784206562464_1xvkt1zen",
+        "_data_coleta": "2026-07-16T12:56:02.464Z",
+        "_tecnico": "saymon@agroflor.com.br"
+      }
+    }
+  ]
+}
