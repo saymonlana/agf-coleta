@@ -329,7 +329,7 @@ function configurarEventListeners() {
     try { document.getElementById('btn-salvar').addEventListener('click', handleSalvar); } catch(e) {}
     
     // Botao voltar do mapa (coleta -> mapa)
-    try { document.getElementById('btn-voltar-mapa').addEventListener('click', () => { mostrarTela('tela-mapa'); }); } catch(e) {}
+    try { document.getElementById('btn-voltar-mapa').addEventListener('click', () => { restaurarTituloProjeto(); mostrarTela('tela-mapa'); }); } catch(e) {}
     
     // Botao sync
     try { document.getElementById('btn-sync').addEventListener('click', handleSync); } catch(e) {}
@@ -549,6 +549,12 @@ async function abrirProjeto(projetoId) {
     
     carregarPontosNoMapa();
     atualizarContadorPontos();
+}
+
+function restaurarTituloProjeto() {
+    const projeto = App.projetos.find(p => p.id === App.projetoAtual);
+    const nomeProjeto = projeto ? projeto.nome : 'Projeto';
+    document.getElementById('titulo-projeto').textContent = nomeProjeto;
 }
 
 function atualizarContadorPontos() {
@@ -906,6 +912,15 @@ function editarPontoLocal(id) {
         h1.textContent = `Editar - ${configCamada ? configCamada.nome : 'Ponto'}`;
     }
     
+    // Exibir coordenadas salvas do ponto
+    if (ponto.latitude && ponto.longitude) {
+        document.getElementById('coordenadas-gps').textContent = 
+            `Lat: ${ponto.latitude.toFixed(6)} | Lon: ${ponto.longitude.toFixed(6)}`;
+        document.getElementById('coordenadas-gps').className = 'coordenadas ativo';
+        exibirCoordenadasUTM(ponto.latitude, ponto.longitude);
+        App.crosshairPosition = { lat: ponto.latitude, lng: ponto.longitude };
+    }
+    
     setTimeout(() => {
         const form = document.getElementById('form-coleta');
         if (!form) return;
@@ -947,6 +962,18 @@ function editarPontoBox(id, camada) {
     if (h1) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         h1.textContent = `Editar Box - ${configCamada ? configCamada.nome : 'Ponto'}`;
+    }
+    
+    // Exibir coordenadas salvas do ponto
+    const geom = ponto.geometry;
+    if (geom && geom.coordinates) {
+        const lon = geom.coordinates[0];
+        const lat = geom.coordinates[1];
+        document.getElementById('coordenadas-gps').textContent = 
+            `Lat: ${lat.toFixed(6)} | Lon: ${lon.toFixed(6)}`;
+        document.getElementById('coordenadas-gps').className = 'coordenadas ativo';
+        exibirCoordenadasUTM(lat, lon);
+        App.crosshairPosition = { lat, lng: lon };
     }
     
     setTimeout(() => {
@@ -1177,6 +1204,7 @@ function handleSalvar() {
         if (salvarEdicao(campos)) {
             form.reset();
             form.closest('.tela').classList.remove('ativo');
+            restaurarTituloProjeto();
             mostrarTela('tela-mapa');
             carregarPontosNoMapa();
             return;
