@@ -928,6 +928,149 @@ function atualizarFormularioInventario() {
 }
 
 // ============================================
+// EDICAO DE PONTOS
+// ============================================
+
+let AppEditando = {
+    id: null,
+    origem: null,
+    camada: null
+};
+
+function editarPontoLocal(id) {
+    const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
+    const ponto = dadosLocais.find(d => d.id === id);
+    
+    if (!ponto) {
+        mostrarToast('Ponto nao encontrado', 'erro');
+        return;
+    }
+    
+    if (ponto.status === 'sincronizado') {
+        mostrarToast('Ponto ja sincronizado. Edite antes de sincronizar.', 'aviso');
+        return;
+    }
+    
+    AppEditando = { id: id, origem: 'local', camada: ponto.camada };
+    
+    App.projetoAtual = 'inventario';
+    CamadasConfig.camadaAtiva = ponto.camada;
+    
+    document.getElementById('titulo-projeto').textContent = 'Editar Ponto';
+    mostrarTela('tela-coleta');
+    
+    const h1 = document.querySelector('#tela-coleta h1');
+    if (h1) {
+        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[ponto.camada];
+        h1.textContent = `Editar - ${configCamada ? configCamada.nome : 'Ponto'}`;
+    }
+    
+    setTimeout(() => {
+        const form = document.getElementById('form-coleta');
+        if (!form) return;
+        
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.name && ponto.campos[input.name] !== undefined) {
+                input.value = ponto.campos[input.name];
+            }
+        });
+        
+        const btnSubmeter = form.querySelector('button[type="submit"]');
+        if (btnSubmeter) {
+            btnSubmeter.textContent = 'Salvar Alteracoes';
+        }
+    }, 100);
+}
+
+function editarPontoBox(id, camada) {
+    const dadosBox = App.dadosBox['inventario'] || [];
+    const ponto = dadosBox.find(f => f.properties && f.properties._id === id);
+    
+    if (!ponto) {
+        mostrarToast('Ponto nao encontrado no Box', 'erro');
+        return;
+    }
+    
+    AppEditando = { id: id, origem: 'box', camada: camada };
+    
+    App.projetoAtual = 'inventario';
+    CamadasConfig.camadaAtiva = camada;
+    
+    document.getElementById('titulo-projeto').textContent = 'Editar Ponto (Box)';
+    mostrarTela('tela-coleta');
+    
+    const h1 = document.querySelector('#tela-coleta h1');
+    if (h1) {
+        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
+        h1.textContent = `Editar Box - ${configCamada ? configCamada.nome : 'Ponto'}`;
+    }
+    
+    setTimeout(() => {
+        const form = document.getElementById('form-coleta');
+        if (!form) return;
+        
+        const props = ponto.properties;
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.name && props[input.name] !== undefined) {
+                input.value = props[input.name];
+            }
+        });
+        
+        const btnSubmeter = form.querySelector('button[type="submit"]');
+        if (btnSubmeter) {
+            btnSubmeter.textContent = 'Salvar Alteracoes';
+        }
+    }, 100);
+}
+
+function salvarEdicao(campos) {
+    if (!AppEditando.id) return false;
+    
+    if (AppEditando.origem === 'local') {
+        const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
+        const ponto = dadosLocais.find(d => d.id === AppEditando.id);
+        
+        if (ponto) {
+            Object.assign(ponto.campos, campos);
+            ponto.editado = true;
+            ponto.editadoEm = new Date().toISOString();
+            salvarDadosLocais();
+            
+            AppEditando = { id: null, origem: null, camada: null };
+            mostrarToast('Ponto atualizado!', 'sucesso');
+            return true;
+        }
+    } else if (AppEditando.origem === 'box') {
+        const dadosBox = App.dadosBox['inventario'] || [];
+        const ponto = dadosBox.find(f => f.properties && f.properties._id === AppEditando.id);
+        
+        if (ponto) {
+            Object.assign(ponto.properties, campos);
+            ponto.properties._editado = true;
+            ponto.properties._editado_em = new Date().toISOString();
+            
+            let dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+            dadosEditados = dadosEditados.filter(d => d._id !== AppEditando.id);
+            dadosEditados.push({
+                _id: AppEditando.id,
+                _camada: AppEditando.camada,
+                properties: ponto.properties,
+                geometry: ponto.geometry
+            });
+            localStorage.setItem('agf_inventario_editados', JSON.stringify(dadosEditados));
+            
+            AppEditando = { id: null, origem: null, camada: null };
+            mostrarToast('Ponto atualizado (sera sincronizado)!', 'sucesso');
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// ============================================
 // COMPLEMENTOS
 // ============================================
 
@@ -1072,6 +1215,25 @@ function mostrarComplementoSalvo(tipo, dados) {
 function handleSalvar() {
     try {
     const form = document.getElementById('form-coleta');
+    
+    // Modo edicao
+    if (AppEditando.id) {
+        const campos = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.name) {
+                campos[input.name] = input.value;
+            }
+        });
+        
+        if (salvarEdicao(campos)) {
+            form.reset();
+            form.closest('.tela').classList.remove('ativo');
+            mostrarTela('tela-mapa');
+            carregarPontosNoMapa();
+            return;
+        }
+    }
     
     // Validacao manual - campos obrigatorios
     const camposObrigatorios = form.querySelectorAll('[required]');

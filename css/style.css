@@ -907,6 +907,67 @@ html, body {
 }
 
 /* ============================================
+   POPUPS DO MAPA
+   ============================================ */
+
+.popup-conteudo {
+    font-family: var(--fonte);
+    min-width: 220px;
+}
+
+.popup-cabecalho {
+    padding: 10px 14px;
+    border-radius: 8px 8px 0 0;
+    color: white;
+}
+
+.popup-cabecalho h4 {
+    margin: 0 0 2px 0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.popup-cabecalho span {
+    font-size: 11px;
+    opacity: 0.9;
+}
+
+.popup-corpo {
+    padding: 10px 14px;
+}
+
+.popup-corpo p {
+    margin: 0 0 4px 0;
+    font-size: 12px;
+    color: #444;
+}
+
+.popup-corpo p strong {
+    color: #333;
+}
+
+.popup-rodape {
+    padding: 6px 14px 10px;
+    border-top: 1px solid #eee;
+}
+
+.btn-editar-popup {
+    width: 100%;
+    padding: 8px 16px;
+    background: var(--verde-medio);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-editar-popup:hover {
+    background: var(--verde-escuro);
+}
+
+/* ============================================
    TOAST NOTIFICAÇÃO
    ============================================ */
 

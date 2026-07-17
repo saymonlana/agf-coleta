@@ -953,10 +953,24 @@ async function sincronizarInventario() {
             
             const totalAntes = geojson.features ? geojson.features.length : 0;
             
-            // Adicionar novos pontos (apenas os que ainda nao existem)
+            // Adicionar novos pontos e atualizar editados
             let adicionadosCamada = 0;
+            let atualizadosCamada = 0;
             porCamada[camada].forEach(dado => {
-                if (!idsExistentes.has(dado.id)) {
+                if (idsExistentes.has(dado.id)) {
+                    if (dado.editado) {
+                        const idx = geojson.features.findIndex(f => f.properties && f.properties._id === dado.id);
+                        if (idx !== -1) {
+                            geojson.features[idx].properties = {
+                                ...geojson.features[idx].properties,
+                                ...dado.campos,
+                                _editado: true,
+                                _editado_em: dado.editadoEm
+                            };
+                            atualizadosCamada++;
+                        }
+                    }
+                } else {
                     const feature = {
                         type: 'Feature',
                         geometry: {
@@ -976,6 +990,21 @@ async function sincronizarInventario() {
                 }
             });
             
+            // Atualizar pontos editados no Box
+            const dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+            dadosEditados.forEach(editado => {
+                if (editado._camada === camada) {
+                    const idx = geojson.features.findIndex(f => f.properties && f.properties._id === editado._id);
+                    if (idx !== -1) {
+                        geojson.features[idx].properties = {
+                            ...geojson.features[idx].properties,
+                            ...editado.properties
+                        };
+                        atualizadosCamada++;
+                    }
+                }
+            });
+            
             novosAdicionados += adicionadosCamada;
             
             // Salvar GeoJSON no Box
@@ -986,7 +1015,7 @@ async function sincronizarInventario() {
             const conteudoKml = geojsonParaKml(geojson, camada);
             await salvarKml(camada, conteudoKml);
             
-            status.textContent = `${camada}: ${adicionadosCamada} novos (${geojson.features.length} total)`;
+            status.textContent = `${camada}: ${adicionadosCamada} novos, ${atualizadosCamada} atualizados (${geojson.features.length} total)`;
             enviados += porCamada[camada].length;
         }
         
@@ -1000,6 +1029,8 @@ async function sincronizarInventario() {
         
         salvarDadosLocais();
         
+        localStorage.removeItem('agf_inventario_editados');
+        
         titulo.textContent = 'Sincronizacao concluida!';
         status.textContent = `${novosAdicionados} novos pontos em ${camadas.length} camada(s) + KML gerado`;
         progress.style.width = '100%';
@@ -1007,7 +1038,7 @@ async function sincronizarInventario() {
         
         atualizarContadorPontos();
         carregarPontosNoMapa();
-        mostrarToast(`${novosAdicionados} novos pontos sincronizados + KML!`, 'sucesso');
+        mostrarToast(`${novosAdicionados} novos + editados sincronizados + KML!`, 'sucesso');
         
     } catch (error) {
         console.error('Erro na sincronizacao:', error);

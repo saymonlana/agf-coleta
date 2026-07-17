@@ -210,32 +210,46 @@ function adicionarPontoNoMapa(dados) {
 }
 
 function criarPopupConteudo(dados) {
-    const status = dados.campos.status || 'Não informado';
-    const nome = dados.campos.nome_proprietario || 'Sem nome';
-    const endereco = dados.campos.endereco || 'Sem endereço';
+    const camada = dados.camada || '';
     
     let cor = '#3498DB';
-    if (dados.camada && typeof CamadasConfig !== 'undefined' && CamadasConfig.cores[dados.camada]) {
-        cor = CamadasConfig.cores[dados.camada];
-    } else {
-        cor = getCorStatus(status);
+    if (camada && typeof CamadasConfig !== 'undefined' && CamadasConfig.cores[camada]) {
+        cor = CamadasConfig.cores[camada];
     }
     
-    const nomeCamada = dados.camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[dados.camada]
-        ? DADOS_CONFIG_INVENTARIO.camadas[dados.camada].nome
-        : '';
+    let nomeCamada = '';
+    let camposHtml = '';
+    
+    if (camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]) {
+        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
+        nomeCamada = configCamada.nome;
+        
+        const camposMostrar = configCamada.camadas ? configCamada.camadas.slice(0, 6) : configCamada.camadas;
+        camposHtml = camposMostrar.map(campo => {
+            const valor = dados.campos[campo.nome] || '';
+            if (!valor) return '';
+            return `<p><strong>${campo.label}:</strong> ${valor}</p>`;
+        }).filter(Boolean).join('');
+    }
+    
+    const status = dados.status || 'novo';
+    const statusLabel = status === 'novo' ? 'Pendente' : 'Sincronizado';
+    const statusClass = status === 'novo' ? 'pendente' : 'sincronizado';
+    const editarBtn = status === 'novo' ? `<button class="btn-editar-popup" onclick="editarPontoLocal('${dados.id}')">Editar</button>` : '';
     
     return `
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
-                <h4>${nome}</h4>
-                <span>${nomeCamada || status}</span>
+                <h4>${nomeCamada || 'Ponto'}</h4>
+                <span>${camada || ''} - <span class="revisao-status ${statusClass}">${statusLabel}</span></span>
             </div>
             <div class="popup-corpo">
-                ${endereco !== 'Sem endereço' ? `<p><strong>Endereço:</strong> ${endereco}</p>` : ''}
-                <p><strong>Coletado por:</strong> ${dados.tecnico}</p>
+                ${camposHtml}
+                <p><strong>Coletado por:</strong> ${dados.tecnico || 'N/A'}</p>
                 <p><strong>Data:</strong> ${formatarData(dados.dataColeta)}</p>
-                ${dados.campos.observacoes ? `<p><strong>Obs:</strong> ${dados.campos.observacoes}</p>` : ''}
+            </div>
+            <div class="popup-rodape">
+                ${editarBtn}
             </div>
         </div>
     `;
@@ -361,33 +375,46 @@ function adicionarFeatureNoMapa(feature, lat, lng) {
 function criarPopupFeature(feature, camada) {
     const props = feature.properties || {};
     
-    const nome = props.NOME_DO_ENTREVISTADO || props.NOME || props.nome || 'Sem nome';
-    const endereco = props.ENDERECO_COMPLETO || props.endereco || 'Sem endereco';
-    const status = props.STATUS_DA_PESQUISA || props.status || 'Nao informado';
-    const entrevistador = props.ENTREVISTADOR || props.entrevistador || props._tecnico || 'N/A';
-    const data = props.DATA || props._data_coleta || props.data || 'N/A';
-    
     let cor = '#3498DB';
     if (camada && typeof CamadasConfig !== 'undefined' && CamadasConfig.cores[camada]) {
         cor = CamadasConfig.cores[camada];
-    } else {
-        cor = getCorStatus(status);
     }
     
-    const nomeCamada = camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]
-        ? DADOS_CONFIG_INVENTARIO.camadas[camada].nome
-        : '';
+    let nomeCamada = '';
+    let camposHtml = '';
+    
+    if (camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]) {
+        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
+        nomeCamada = configCamada.nome;
+        
+        const camposMostrar = configCamada.camadas ? configCamada.camadas.slice(0, 6) : configCamada.camadas;
+        camposHtml = camposMostrar.map(campo => {
+            const valor = props[campo.nome] || '';
+            if (!valor) return '';
+            return `<p><strong>${campo.label}:</strong> ${valor}</p>`;
+        }).filter(Boolean).join('');
+    } else {
+        camposHtml = `
+            ${props.ENDERECO_COMPLETO || props.endereco ? `<p><strong>Endereco:</strong> ${props.ENDERECO_COMPLETO || props.endereco}</p>` : ''}
+            <p><strong>Coletado por:</strong> ${props.ENTREVISTADOR || props._tecnico || 'N/A'}</p>
+            <p><strong>Data:</strong> ${props.DATA || props._data_coleta || 'N/A'}</p>
+        `;
+    }
+    
+    const featureId = props._id || '';
+    const editarBtn = featureId ? `<button class="btn-editar-popup" onclick="editarPontoBox('${featureId}', '${camada}')">Editar</button>` : '';
     
     return `
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
-                <h4>${nome}</h4>
-                <span>${nomeCamada || status}</span>
+                <h4>${nomeCamada || 'Ponto'}</h4>
+                <span>${camada || ''}</span>
             </div>
             <div class="popup-corpo">
-                ${endereco !== 'Sem endereco' ? `<p><strong>Endereco:</strong> ${endereco}</p>` : ''}
-                <p><strong>Coletado por:</strong> ${entrevistador}</p>
-                <p><strong>Data:</strong> ${data}</p>
+                ${camposHtml}
+            </div>
+            <div class="popup-rodape">
+                ${editarBtn}
             </div>
         </div>
     `;
