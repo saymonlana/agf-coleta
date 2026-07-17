@@ -334,10 +334,6 @@ function configurarEventListeners() {
     // Botao sync
     try { document.getElementById('btn-sync').addEventListener('click', handleSync); } catch(e) {}
     
-    // Botoes da revisao
-    try { document.getElementById('btn-cancelar-revisao').addEventListener('click', fecharRevisao); } catch(e) {}
-    try { document.getElementById('btn-confirmar-sync').addEventListener('click', confirmarSync); } catch(e) {}
-    
     // Botao minha localizacao
     try {
         document.getElementById('btn-minha-localizacao').addEventListener('click', () => {
@@ -390,73 +386,19 @@ function handleSync() {
     
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
     const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
+    const dadosEditadosBox = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
     
-    console.log('Dados locais:', dadosLocais.length, '| Novos:', dadosNovos.length);
+    console.log('Dados locais:', dadosLocais.length, '| Novos:', dadosNovos.length, '| Editados Box:', dadosEditadosBox.length);
     
-    if (dadosNovos.length === 0) {
+    if (dadosNovos.length === 0 && dadosEditadosBox.length === 0) {
         mostrarToast('Nenhum dado novo para sincronizar', 'aviso');
         return;
     }
     
-    abrirRevisao(dadosNovos);
-}
-
-// ============================================
-// MODAL DE REVISAO
-// ============================================
-
-function abrirRevisao(dadosNovos) {
-    const modal = document.getElementById('modal-revisao');
-    const lista = document.getElementById('revisao-lista');
-    const resumo = document.getElementById('revisao-resumo');
-    
-    // Contar por camada
-    const porCamada = {};
-    dadosNovos.forEach(d => {
-        const camada = d.camada || 'Sem camada';
-        porCamada[camada] = (porCamada[camada] || 0) + 1;
-    });
-    
-    const resumoTexto = Object.entries(porCamada)
-        .map(([camada, qtd]) => `${qtd} ${camada}`)
-        .join(', ');
-    resumo.textContent = `${dadosNovos.length} ponto(s) para enviar: ${resumoTexto}`;
-    
-    // Preencher lista
-    lista.innerHTML = '';
-    dadosNovos.forEach(dado => {
-        const cor = CamadasConfig.cores[dado.camada] || '#3498DB';
-        const nomeCamada = DADOS_CONFIG_INVENTARIO.camadas[dado.camada]
-            ? DADOS_CONFIG_INVENTARIO.camadas[dado.camada].nome
-            : dado.camada || 'Sem camada';
-        const nome = dado.campos.nome_proprietario || dado.campos.NOME_DO_ENTREVISTADO || 'Sem nome';
-        const endereco = dado.campos.endereco || dado.campos.ENDERECO_COMPLETO || '';
-        const data = new Date(dado.dataColeta).toLocaleDateString('pt-BR');
-        
-        const item = document.createElement('div');
-        item.className = 'revisao-item';
-        item.innerHTML = `
-            <div class="revisao-cor" style="background-color: ${cor}"></div>
-            <div class="revisao-info">
-                <div class="revisao-nome">${nome}</div>
-                <div class="revisao-detalhes">${nomeCamada}${endereco ? ' - ' + endereco : ''} - ${data}</div>
-            </div>
-            <span class="revisao-status novo">Novo</span>
-        `;
-        lista.appendChild(item);
-    });
-    
-    modal.classList.add('ativo');
-}
-
-function fecharRevisao() {
-    document.getElementById('modal-revisao').classList.remove('ativo');
-}
-
-function confirmarSync() {
-    fecharRevisao();
     sincronizarDados();
 }
+
+
 
 function atualizarStatusToken() {
     const statusEl = document.getElementById('token-status');
@@ -617,12 +559,14 @@ function atualizarContadorPontos() {
     const novos = dadosLocais.filter(d => d.status === 'novo').length;
     const pendentes = FilaSync.obterCountPendentes();
     
+    const dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+    const editadosBox = dadosEditados.length;
+    
+    const totalPendentes = novos + pendentes + editadosBox;
+    
     let texto = `${totalBox} registros`;
-    if (novos > 0) {
-        texto += ` | ${novos} coletados`;
-    }
-    if (pendentes > 0) {
-        texto += ` | ${pendentes} pendentes`;
+    if (totalPendentes > 0) {
+        texto += ` | ${totalPendentes} pendente(s)`;
     }
     
     document.getElementById('contador-pontos').textContent = texto;
@@ -631,14 +575,14 @@ function atualizarContadorPontos() {
     const btnSync = document.getElementById('btn-sync');
     let badge = btnSync.querySelector('.badge-pendentes');
     
-    if (pendentes > 0) {
+    if (totalPendentes > 0) {
         if (!badge) {
             badge = document.createElement('span');
             badge.className = 'badge-pendentes';
             btnSync.style.position = 'relative';
             btnSync.appendChild(badge);
         }
-        badge.textContent = pendentes;
+        badge.textContent = totalPendentes;
     } else if (badge) {
         badge.remove();
     }
@@ -952,6 +896,8 @@ function editarPontoLocal(id) {
     CamadasConfig.camadaAtiva = ponto.camada;
     
     document.getElementById('titulo-projeto').textContent = 'Editar Ponto';
+    
+    gerarCamposFormulario();
     mostrarTela('tela-coleta');
     
     const h1 = document.querySelector('#tela-coleta h1');
@@ -975,7 +921,7 @@ function editarPontoLocal(id) {
         if (btnSubmeter) {
             btnSubmeter.textContent = 'Salvar Alteracoes';
         }
-    }, 100);
+    }, 200);
 }
 
 function editarPontoBox(id, camada) {
@@ -993,6 +939,8 @@ function editarPontoBox(id, camada) {
     CamadasConfig.camadaAtiva = camada;
     
     document.getElementById('titulo-projeto').textContent = 'Editar Ponto (Box)';
+    
+    gerarCamposFormulario();
     mostrarTela('tela-coleta');
     
     const h1 = document.querySelector('#tela-coleta h1');
@@ -1017,7 +965,7 @@ function editarPontoBox(id, camada) {
         if (btnSubmeter) {
             btnSubmeter.textContent = 'Salvar Alteracoes';
         }
-    }, 100);
+    }, 200);
 }
 
 function salvarEdicao(campos) {
@@ -1031,10 +979,14 @@ function salvarEdicao(campos) {
             Object.assign(ponto.campos, campos);
             ponto.editado = true;
             ponto.editadoEm = new Date().toISOString();
+            if (ponto.status !== 'novo') {
+                ponto.status = 'novo';
+            }
             salvarDadosLocais();
             
             AppEditando = { id: null, origem: null, camada: null };
-            mostrarToast('Ponto atualizado!', 'sucesso');
+            atualizarContadorPontos();
+            mostrarToast('Ponto atualizado! Sincronize para enviar.', 'sucesso');
             return true;
         }
     } else if (AppEditando.origem === 'box') {
@@ -1057,6 +1009,7 @@ function salvarEdicao(campos) {
             localStorage.setItem('agf_inventario_editados', JSON.stringify(dadosEditados));
             
             AppEditando = { id: null, origem: null, camada: null };
+            atualizarContadorPontos();
             mostrarToast('Ponto atualizado (sera sincronizado)!', 'sucesso');
             return true;
         }

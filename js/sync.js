@@ -829,9 +829,13 @@ function mostrarRevisao(dadosNovos) {
             if (typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[dado.camada]) {
                 nomeCamada = DADOS_CONFIG_INVENTARIO.camadas[dado.camada].nome;
             }
-            const nome = dado.campos.nome_proprietario || dado.campos.NOME_DO_ENTREVISTADO || 'Sem nome';
-            const endereco = dado.campos.endereco || dado.campos.ENDERECO_COMPLETO || '';
-            const data = new Date(dado.dataColeta).toLocaleDateString('pt-BR');
+            const campos = dado.campos || {};
+            const nome = campos.nome_proprietario || campos.NOME_DO_ENTREVISTADO || campos.NOME || 'Sem nome';
+            const endereco = campos.endereco || campos.ENDERECO_COMPLETO || '';
+            const data = dado.dataColeta ? new Date(dado.dataColeta).toLocaleDateString('pt-BR') : '';
+            
+            const tipoLabel = dado._tipoRevisao === 'editado' ? 'Editado' : 'Novo';
+            const tipoClass = dado._tipoRevisao === 'editado' ? 'editado' : 'novo';
             
             const item = document.createElement('div');
             item.className = 'revisao-item';
@@ -839,9 +843,9 @@ function mostrarRevisao(dadosNovos) {
                 <div class="revisao-cor" style="background-color: ${cor}"></div>
                 <div class="revisao-info">
                     <div class="revisao-nome">${nome}</div>
-                    <div class="revisao-detalhes">${nomeCamada}${endereco ? ' - ' + endereco : ''} - ${data}</div>
+                    <div class="revisao-detalhes">${nomeCamada}${endereco ? ' - ' + endereco : ''}${data ? ' - ' + data : ''}</div>
                 </div>
-                <span class="revisao-status novo">Novo</span>
+                <span class="revisao-status ${tipoClass}">${tipoLabel}</span>
             `;
             lista.appendChild(item);
         });
@@ -869,12 +873,19 @@ async function sincronizarInventario() {
     const dadosLocais = App.dadosLocais['inventario'] || [];
     const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
     
-    if (dadosNovos.length === 0) {
+    const dadosEditadosBox = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+    
+    if (dadosNovos.length === 0 && dadosEditadosBox.length === 0) {
         mostrarToast('Nenhum dado novo para sincronizar', 'aviso');
         return;
     }
     
-    const aprovado = await mostrarRevisao(dadosNovos);
+    const itensRevisao = [
+        ...dadosNovos.map(d => ({...d, _tipoRevisao: d.editado ? 'editado' : 'novo'})),
+        ...dadosEditadosBox.map(d => ({id: d._id, camada: d._camada, campos: d.properties, _tipoRevisao: 'editado'}))
+    ];
+    
+    const aprovado = await mostrarRevisao(itensRevisao);
     if (!aprovado) return;
     
     const modal = document.getElementById('modal-sync');
@@ -904,7 +915,7 @@ async function sincronizarInventario() {
         
         const dadosParaSync = dadosLocais.filter(d => d.status === 'novo' || d.status === 'sincronizado');
         
-        if (dadosNovos.length === 0 && dadosParaSync.length === 0) {
+        if (dadosNovos.length === 0 && dadosParaSync.length === 0 && dadosEditadosBox.length === 0) {
             titulo.textContent = 'Nada para sincronizar';
             status.textContent = 'Todos os dados ja foram enviados';
             progress.style.width = '100%';
@@ -925,6 +936,12 @@ async function sincronizarInventario() {
             porCamada[camada].push(dado);
         });
         
+        // Incluir camadas de dados editados no Box
+        dadosEditadosBox.forEach(editado => {
+            const camada = editado._camada || 'Censo';
+            if (!porCamada[camada]) porCamada[camada] = [];
+        });
+        
         const camadas = Object.keys(porCamada);
         let enviados = 0;
         let novosAdicionados = 0;
@@ -932,7 +949,8 @@ async function sincronizarInventario() {
         for (const camada of camadas) {
             titulo.textContent = `Sincronizando ${camada}...`;
             status.textContent = `Enviando ${porCamada[camada].length} registros...`;
-            progress.style.width = `${20 + (enviados / dadosParaSync.length) * 70}%`;
+            const totalItens = dadosParaSync.length || dadosEditadosBox.length;
+            progress.style.width = `${20 + (enviados / totalItens) * 70}%`;
             
             // Baixar a versao MAIS RECENTE do Box
             let geojson = await baixarGeoJSON(camada);

@@ -820,6 +820,11 @@ html, body {
     color: #856404;
 }
 
+.revisao-status.editado {
+    background: #CCE5FF;
+    color: #004085;
+}
+
 .revisao-status.sincronizado {
     background: #D4EDDA;
     color: #155724;
@@ -934,6 +939,8 @@ html, body {
 
 .popup-corpo {
     padding: 10px 14px;
+    max-height: 200px;
+    overflow-y: auto;
 }
 
 .popup-corpo p {

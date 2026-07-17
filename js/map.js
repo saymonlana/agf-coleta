@@ -413,7 +413,7 @@ function criarPopupFeature(feature, camada) {
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
                 <h4>${nomeCamada || 'Ponto'}</h4>
-                <span>${camada || ''}</span>
+                <span>${camada || ''} - <span class="revisao-status sincronizado">Sincronizado</span></span>
             </div>
             <div class="popup-corpo">
                 ${camposHtml}
