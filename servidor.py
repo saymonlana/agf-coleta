@@ -12,7 +12,7 @@ import urllib.error
 import base64
 import uuid
 
-PORT = 8080
+PORT = int(os.environ.get('PORT', 8080))
 DIR = os.path.dirname(os.path.abspath(__file__))
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -57,6 +57,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     upload_body = attr_part + file_header + file_bytes + closing
                     
                     req = urllib.request.Request(url, data=upload_body, method='POST')
+                    for key, value in headers.items():
+                        req.add_header(key, value)
+                    req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')
+                elif data.get('form'):
+                    boundary = uuid.uuid4().hex
+                    parts = []
+                    for entry in data['form']:
+                        if entry.get('type') == 'file':
+                            file_bytes = base64.b64decode(entry['value'])
+                            header = f'--{boundary}\r\nContent-Disposition: form-data; name="{entry["key"]}"; filename="{entry.get("filename", "file")}"\r\nContent-Type: application/octet-stream\r\n\r\n'.encode()
+                            parts.append(header + file_bytes)
+                        else:
+                            text_part = f'--{boundary}\r\nContent-Disposition: form-data; name="{entry["key"]}"\r\n\r\n{entry["value"]}\r\n'.encode()
+                            parts.append(text_part)
+                    closing = f'\r\n--{boundary}--\r\n'.encode()
+                    upload_body = b''.join(parts) + closing
+                    
+                    req = urllib.request.Request(url, data=upload_body, method=method)
                     for key, value in headers.items():
                         req.add_header(key, value)
                     req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')

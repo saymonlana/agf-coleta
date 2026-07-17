@@ -17,8 +17,12 @@ const Sync = {
 // PROXY PARA BOX API (evita CORS)
 // ============================================
 
+const PROXY_URL = (location.protocol === 'file:' || location.hostname === '')
+    ? 'https://agf-coleta.onrender.com/proxy/box'
+    : '/proxy/box';
+
 async function boxFetch(url, options = {}) {
-    const resp = await fetch('/proxy/box', {
+    const resp = await fetch(PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -52,7 +56,7 @@ async function boxUploadFile(url, formData) {
         }
     }
     
-    const resp = await fetch('/proxy/box', {
+    const resp = await fetch(PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -238,7 +242,7 @@ async function subirArquivoBox(nomeArquivo, conteudo, pastaId) {
         });
         const base64 = btoa(unescape(encodeURIComponent(conteudoStr)));
         
-        const resp = await fetch('/proxy/box', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -331,7 +335,7 @@ async function baixarArquivoBox(fileId) {
     if (!await verificarToken()) return null;
     
     try {
-        const resp = await fetch('/proxy/box', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -732,7 +736,7 @@ async function baixarGeoJSON(nomeArquivo) {
     }
     
     try {
-        const resp = await fetch('/proxy/box', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -771,7 +775,7 @@ async function salvarGeoJSON(nomeArquivo, dados) {
     try {
         const base64 = btoa(unescape(encodeURIComponent(conteudo)));
         
-        const resp = await fetch('/proxy/box', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1153,7 +1157,7 @@ async function salvarKml(nomeArquivo, conteudoKml) {
     try {
         const base64 = btoa(unescape(encodeURIComponent(conteudoKml)));
         
-        const resp = await fetch('/proxy/box', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

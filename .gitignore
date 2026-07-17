@@ -8,3 +8,10 @@ Thumbs.db
 *.sr.lock
 *.lock
 Inventario_Florestal/Inventario_Florestal_GDB/
+android-app/
+android.keystore
+AGF_Coleta.apk
+*.shp
+*.shx
+*.dbf
+*.prj
