@@ -229,7 +229,7 @@ function criarPopupConteudo(dados) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
         
-        const camposMostrar = configCamada.campos ? configCamada.campos.slice(0, 6) : [];
+        const camposMostrar = configCamada.campos || [];
         camposHtml = camposMostrar.map(campo => {
             const valor = campos[campo.nome] || '';
             if (!valor) return '';
@@ -240,7 +240,7 @@ function criarPopupConteudo(dados) {
     const status = dados.status || 'novo';
     const statusLabel = status === 'novo' ? 'Pendente' : 'Sincronizado';
     const statusClass = status === 'novo' ? 'pendente' : 'sincronizado';
-    const editarBtn = status === 'novo' ? `<button class="btn-editar-popup" onclick="editarPontoLocal('${dados.id}')">Editar</button>` : '';
+    const editarBtn = `<button class="btn-editar-popup" onclick="editarPontoLocal('${dados.id}')">Editar</button>`;
     
     return `
         <div class="popup-conteudo">
@@ -392,7 +392,7 @@ function criarPopupFeature(feature, camada) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
         
-        const camposMostrar = configCamada.campos ? configCamada.campos.slice(0, 6) : [];
+        const camposMostrar = configCamada.campos || [];
         camposHtml = camposMostrar.map(campo => {
             const valor = props[campo.nome] || '';
             if (!valor) return '';

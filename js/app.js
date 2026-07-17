@@ -946,11 +946,6 @@ function editarPontoLocal(id) {
         return;
     }
     
-    if (ponto.status === 'sincronizado') {
-        mostrarToast('Ponto ja sincronizado. Edite antes de sincronizar.', 'aviso');
-        return;
-    }
-    
     AppEditando = { id: id, origem: 'local', camada: ponto.camada };
     
     App.projetoAtual = 'inventario';
