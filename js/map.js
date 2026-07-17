@@ -128,6 +128,8 @@ function carregarCamadasInventario() {
     if (!mapa) return;
     if (camadasInventarioCarregadas) return;
     
+    const layersParaFoco = [];
+    
     // Propriedades NES
     if (typeof DADOS_Propriedades_NES !== 'undefined' && DADOS_Propriedades_NES.features) {
         const layerPropriedades = L.geoJSON(DADOS_Propriedades_NES, {
@@ -140,6 +142,7 @@ function carregarCamadasInventario() {
         });
         camadasOverlay['Propriedades NES'] = layerPropriedades;
         layerPropriedades.addTo(mapa);
+        layersParaFoco.push(layerPropriedades);
     }
     
     // Quadrantes
@@ -154,6 +157,7 @@ function carregarCamadasInventario() {
         });
         camadasOverlay['Quadrantes'] = layerQuadrantes;
         layerQuadrantes.addTo(mapa);
+        layersParaFoco.push(layerQuadrantes);
     }
     
     // Atualizar controle de camadas
@@ -164,6 +168,12 @@ function carregarCamadasInventario() {
         'Satelite': satelliteLayer,
         'Ruas': streetsLayer
     }, camadasOverlay).addTo(mapa);
+    
+    // Focar no bounds de todas as camadas
+    if (layersParaFoco.length > 0) {
+        const grupoBounds = L.featureGroup(layersParaFoco);
+        mapa.fitBounds(grupoBounds.getBounds(), { padding: [30, 30] });
+    }
     
     camadasInventarioCarregadas = true;
     console.log('Camadas do inventario carregadas');
