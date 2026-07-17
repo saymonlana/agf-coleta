@@ -545,6 +545,9 @@ async function abrirProjeto(projetoId) {
     
     if (projetoId === 'inventario') {
         carregarInventarioDoBox();
+        carregarCamadasInventario();
+    } else {
+        removerCamadasInventario();
     }
     
     carregarPontosNoMapa();

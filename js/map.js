@@ -8,6 +8,11 @@ let circuloPrecisao = null;
 let marcadores = [];
 let layerPontos = null;
 let marcadorMarcado = null;
+let streetsLayer = null;
+let satelliteLayer = null;
+let camadasOverlay = {};
+let layerControl = null;
+let camadasInventarioCarregadas = false;
 
 // ============================================
 // INICIALIZAR MAPA
@@ -31,14 +36,14 @@ function inicializarMapa() {
     });
     
     // Camada de ruas (OpenStreetMap)
-    const streetsLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    streetsLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
         crossOrigin: true
     });
     
     // Camada de satelite (Google)
-    const satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    satelliteLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
         attribution: 'Google',
         maxZoom: 19
     });
@@ -46,39 +51,11 @@ function inicializarMapa() {
     // Usar satelite como padrao
     satelliteLayer.addTo(mapa);
     
-    // Carregar camadas geograficas
-    const camadasOverlay = {};
-    
-    // Propriedades NES
-    if (typeof DADOS_Propriedades_NES !== 'undefined' && DADOS_Propriedades_NES.features) {
-        const layerPropriedades = L.geoJSON(DADOS_Propriedades_NES, {
-            style: { color: '#3498DB', weight: 2, fillColor: '#3498DB', fillOpacity: 0.15 },
-            onEachFeature: function(feature, layer) {
-                const props = feature.properties || {};
-                const nome = props.Name || 'Propriedade';
-                layer.bindPopup(`<b>${nome}</b><br>Area: ${props.Shape_Area ? Number(props.Shape_Area).toFixed(2) : '-'}`);
-            }
-        });
-        camadasOverlay['Propriedades NES'] = layerPropriedades;
-        layerPropriedades.addTo(mapa);
-    }
-    
-    // Quadrantes
-    if (typeof DADOS_Quadrantes !== 'undefined' && DADOS_Quadrantes.features) {
-        const layerQuadrantes = L.geoJSON(DADOS_Quadrantes, {
-            style: { color: '#F39C12', weight: 1.5, fillColor: '#F39C12', fillOpacity: 0.1 },
-            onEachFeature: function(feature, layer) {
-                const props = feature.properties || {};
-                const nome = props.Name || 'Quadrante';
-                layer.bindPopup(`<b>${nome}</b>`);
-            }
-        });
-        camadasOverlay['Quadrantes'] = layerQuadrantes;
-        layerQuadrantes.addTo(mapa);
-    }
+    // Camadas overlay
+    camadasOverlay = {};
     
     // Controle de camadas
-    L.control.layers({
+    layerControl = L.control.layers({
         'Satelite': satelliteLayer,
         'Ruas': streetsLayer
     }, camadasOverlay).addTo(mapa);
@@ -141,6 +118,76 @@ function inicializarMapa() {
     }
     
     console.log('Mapa inicializado em', latInicial, lngInicial);
+}
+
+// ============================================
+// CAMADAS DO INVENTARIO
+// ============================================
+
+function carregarCamadasInventario() {
+    if (!mapa) return;
+    if (camadasInventarioCarregadas) return;
+    
+    // Propriedades NES
+    if (typeof DADOS_Propriedades_NES !== 'undefined' && DADOS_Propriedades_NES.features) {
+        const layerPropriedades = L.geoJSON(DADOS_Propriedades_NES, {
+            style: { color: '#3498DB', weight: 2, fillColor: '#3498DB', fillOpacity: 0.15 },
+            onEachFeature: function(feature, layer) {
+                const props = feature.properties || {};
+                const nome = props.Name || 'Propriedade';
+                layer.bindPopup(`<b>${nome}</b><br>Area: ${props.Shape_Area ? Number(props.Shape_Area).toFixed(2) : '-'}`);
+            }
+        });
+        camadasOverlay['Propriedades NES'] = layerPropriedades;
+        layerPropriedades.addTo(mapa);
+    }
+    
+    // Quadrantes
+    if (typeof DADOS_Quadrantes !== 'undefined' && DADOS_Quadrantes.features) {
+        const layerQuadrantes = L.geoJSON(DADOS_Quadrantes, {
+            style: { color: '#F39C12', weight: 1.5, fillColor: '#F39C12', fillOpacity: 0.1 },
+            onEachFeature: function(feature, layer) {
+                const props = feature.properties || {};
+                const nome = props.Name || 'Quadrante';
+                layer.bindPopup(`<b>${nome}</b>`);
+            }
+        });
+        camadasOverlay['Quadrantes'] = layerQuadrantes;
+        layerQuadrantes.addTo(mapa);
+    }
+    
+    // Atualizar controle de camadas
+    if (layerControl) {
+        mapa.removeControl(layerControl);
+    }
+    layerControl = L.control.layers({
+        'Satelite': satelliteLayer,
+        'Ruas': streetsLayer
+    }, camadasOverlay).addTo(mapa);
+    
+    camadasInventarioCarregadas = true;
+    console.log('Camadas do inventario carregadas');
+}
+
+function removerCamadasInventario() {
+    if (!mapa) return;
+    
+    Object.keys(camadasOverlay).forEach(nome => {
+        if (nome === 'Propriedades NES' || nome === 'Quadrantes') {
+            mapa.removeLayer(camadasOverlay[nome]);
+            delete camadasOverlay[nome];
+        }
+    });
+    
+    if (layerControl) {
+        mapa.removeControl(layerControl);
+    }
+    layerControl = L.control.layers({
+        'Satelite': satelliteLayer,
+        'Ruas': streetsLayer
+    }, camadasOverlay).addTo(mapa);
+    
+    camadasInventarioCarregadas = false;
 }
 
 // ============================================
