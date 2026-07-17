@@ -164,13 +164,17 @@ function adicionarMarcadorPosicao(posicao) {
 }
 
 function adicionarPontoNoMapa(dados) {
+    if (!dados || !dados.latitude || !dados.longitude) return;
+    
+    const campos = dados.campos || {};
+    
     // Definir cor: primeiro por camada (Inventario), depois por status
     let cor = '#3498DB';
     
     if (dados.camada && typeof CamadasConfig !== 'undefined' && CamadasConfig.cores[dados.camada]) {
         cor = CamadasConfig.cores[dados.camada];
     } else {
-        switch (dados.campos.status) {
+        switch (campos.status) {
             case 'Aplicado':
                 cor = '#27AE60'; // Verde
                 break;
@@ -211,6 +215,7 @@ function adicionarPontoNoMapa(dados) {
 
 function criarPopupConteudo(dados) {
     const camada = dados.camada || '';
+    const campos = dados.campos || {};
     
     let cor = '#3498DB';
     if (camada && typeof CamadasConfig !== 'undefined' && CamadasConfig.cores[camada]) {
@@ -224,9 +229,9 @@ function criarPopupConteudo(dados) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
         
-        const camposMostrar = configCamada.camadas ? configCamada.camadas.slice(0, 6) : configCamada.camadas;
+        const camposMostrar = configCamada.campos ? configCamada.campos.slice(0, 6) : [];
         camposHtml = camposMostrar.map(campo => {
-            const valor = dados.campos[campo.nome] || '';
+            const valor = campos[campo.nome] || '';
             if (!valor) return '';
             return `<p><strong>${campo.label}:</strong> ${valor}</p>`;
         }).filter(Boolean).join('');
@@ -387,7 +392,7 @@ function criarPopupFeature(feature, camada) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
         
-        const camposMostrar = configCamada.camadas ? configCamada.camadas.slice(0, 6) : configCamada.camadas;
+        const camposMostrar = configCamada.campos ? configCamada.campos.slice(0, 6) : [];
         camposHtml = camposMostrar.map(campo => {
             const valor = props[campo.nome] || '';
             if (!valor) return '';
