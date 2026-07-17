@@ -49,13 +49,32 @@ function inicializarMapa() {
     // Carregar camadas geograficas
     const camadasOverlay = {};
     
-    // Centro Urbano
-    if (typeof DADOS_CENTRO_URBANO !== 'undefined' && DADOS_CENTRO_URBANO.features) {
-        const layerCentro = L.geoJSON(DADOS_CENTRO_URBANO, {
-            style: { color: '#E74C3C', weight: 2, fillColor: '#E74C3C', fillOpacity: 0.2 }
+    // Propriedades NES
+    if (typeof DADOS_Propriedades_NES !== 'undefined' && DADOS_Propriedades_NES.features) {
+        const layerPropriedades = L.geoJSON(DADOS_Propriedades_NES, {
+            style: { color: '#3498DB', weight: 2, fillColor: '#3498DB', fillOpacity: 0.15 },
+            onEachFeature: function(feature, layer) {
+                const props = feature.properties || {};
+                const nome = props.Name || 'Propriedade';
+                layer.bindPopup(`<b>${nome}</b><br>Area: ${props.Shape_Area ? Number(props.Shape_Area).toFixed(2) : '-'}`);
+            }
         });
-        camadasOverlay['Centro Urbano'] = layerCentro;
-        layerCentro.addTo(mapa);
+        camadasOverlay['Propriedades NES'] = layerPropriedades;
+        layerPropriedades.addTo(mapa);
+    }
+    
+    // Quadrantes
+    if (typeof DADOS_Quadrantes !== 'undefined' && DADOS_Quadrantes.features) {
+        const layerQuadrantes = L.geoJSON(DADOS_Quadrantes, {
+            style: { color: '#F39C12', weight: 1.5, fillColor: '#F39C12', fillOpacity: 0.1 },
+            onEachFeature: function(feature, layer) {
+                const props = feature.properties || {};
+                const nome = props.Name || 'Quadrante';
+                layer.bindPopup(`<b>${nome}</b>`);
+            }
+        });
+        camadasOverlay['Quadrantes'] = layerQuadrantes;
+        layerQuadrantes.addTo(mapa);
     }
     
     // Controle de camadas
