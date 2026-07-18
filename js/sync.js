@@ -22,16 +22,36 @@ const PROXY_URL = (location.protocol === 'file:' || location.hostname === '')
     : '/proxy/box';
 
 async function boxFetch(url, options = {}) {
-    const resp = await fetch(PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            url: url,
-            method: options.method || 'GET',
-            headers: options.headers || {},
-            body: options.body || null
-        })
-    });
+    const timeoutMs = options.timeout || 90000;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    let resp;
+    try {
+        resp = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: url,
+                method: options.method || 'GET',
+                headers: options.headers || {},
+                body: options.body || null
+            }),
+            signal: controller.signal
+        });
+    } catch (e) {
+        clearTimeout(timer);
+        if (e.name === 'AbortError') {
+            const err = new Error('Servidor demorou para responder. Verifique a conexao com a internet e tente novamente.');
+            err.status = 0;
+            throw err;
+        }
+        const err = new Error('Falha na conexao com o servidor. Verifique sua conexao com a internet.');
+        err.status = 0;
+        throw err;
+    }
+    clearTimeout(timer);
+
     const data = await resp.json();
     if (!resp.ok) {
         const err = new Error(data.detail || data.error || 'Erro na API Box');
@@ -56,16 +76,30 @@ async function boxUploadFile(url, formData) {
         }
     }
     
-    const resp = await fetch(PROXY_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            url: url,
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120000);
+
+    let resp;
+    try {
+        resp = await fetch(PROXY_URL, {
             method: 'POST',
-            headers: {},
-            form: formEntries
-        })
-    });
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: url,
+                method: 'POST',
+                headers: {},
+                form: formEntries
+            }),
+            signal: controller.signal
+        });
+    } catch (e) {
+        clearTimeout(timer);
+        if (e.name === 'AbortError') {
+            throw new Error('Upload demorou demais. Verifique sua conexao.');
+        }
+        throw new Error('Falha na conexao durante upload.');
+    }
+    clearTimeout(timer);
     return resp.json();
 }
 
@@ -164,11 +198,17 @@ async function testarConexaoBox() {
         console.log('Conectado como:', data.name);
         return true;
     } catch (e) {
-        console.log('Erro ao testar conexao:', e.message);
+        console.log('Erro ao testar conexao:', e.message, '| Status:', e.status);
         if (e.status === 401) {
             localStorage.removeItem('agf_box_token');
             localStorage.removeItem('agf_box_token_expira');
+            localStorage.removeItem('agf_box_token_input');
             Sync.conectado = false;
+            Sync.erroToken = 'Token invalido ou expirado. Gere um novo token no Box.';
+        } else if (e.status === 0) {
+            Sync.erroToken = e.message;
+        } else {
+            Sync.erroToken = 'Erro ao conectar com o Box (HTTP ' + e.status + ').';
         }
         return false;
     }
@@ -383,7 +423,7 @@ async function sincronizarDados() {
         progress.style.width = '10%';
         
         if (!await testarConexaoBox()) {
-            throw new Error('Token invalido ou expirado. Gere um novo token no Box Developer Console e configure no app.');
+            throw new Error(Sync.erroToken || 'Token invalido ou expirado. Gere um novo token no Box Developer Console e configure no app.');
         }
         
         titulo.textContent = 'Preparando dados...';
@@ -923,7 +963,7 @@ async function sincronizarInventario() {
         progress.style.width = '10%';
         
         if (!await testarConexaoBox()) {
-            throw new Error('Token invalido ou expirado.');
+            throw new Error(Sync.erroToken || 'Token invalido ou expirado.');
         }
         
         titulo.textContent = 'Listando arquivos GeoJSON...';
