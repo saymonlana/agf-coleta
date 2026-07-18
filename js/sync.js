@@ -279,25 +279,26 @@ async function subistituirArquivoBox(fileId, conteudo) {
     if (!await verificarToken()) return null;
     
     try {
-        const resp = await fetch(
-            `https://upload.box.com/api/2.0/files/${fileId}/content`,
-            {
+        const conteudoStr = typeof conteudo === 'string' ? conteudo : JSON.stringify(conteudo, null, 2);
+        const attributes = JSON.stringify({ name: 'update' });
+        const base64 = btoa(unescape(encodeURIComponent(conteudoStr)));
+        
+        const resp = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: `https://upload.box.com/api/2.0/files/${fileId}/content`,
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + Sync.access_token },
-                body: (() => {
-                    const fd = new FormData();
-                    fd.append('attributes', JSON.stringify({ name: 'update' }));
-                    fd.append('file', new Blob(
-                        [typeof conteudo === 'string' ? conteudo : JSON.stringify(conteudo, null, 2)],
-                        { type: 'application/json' }
-                    ));
-                    return fd;
-                })()
-            }
-        );
+                upload: true,
+                attributes: attributes,
+                fileBase64: base64,
+                fileName: 'update.json'
+            })
+        });
         
-        if (resp.ok) {
-            const data = await resp.json();
+        const data = await resp.json();
+        if (resp.ok && data.entries) {
             console.log('Arquivo atualizado:', data.entries[0].name);
             return data.entries[0];
         }
@@ -341,17 +342,14 @@ async function baixarArquivoBox(fileId) {
             body: JSON.stringify({
                 url: `https://api.box.com/2.0/files/${fileId}/content`,
                 method: 'GET',
+                followRedirects: true,
                 headers: { 'Authorization': 'Bearer ' + Sync.access_token }
             })
         });
         
-        if (resp.redirected) {
-            const data = await fetch(resp.url);
-            return await data.json();
-        }
-        
         if (resp.ok) {
-            return await resp.json();
+            const text = await resp.text();
+            try { return JSON.parse(text); } catch(e) { return text; }
         }
         return null;
     } catch (e) {
@@ -568,15 +566,20 @@ async function trocarCodePorToken(code) {
     const redirectUri = Sync.redirect_uri || 'https://localhost';
     
     try {
-        const resp = await fetch('https://api.box.com/oauth2/token', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                grant_type: 'authorization_code',
-                code: code,
-                client_id: Sync.client_id,
-                client_secret: Sync.client_secret,
-                redirect_uri: redirectUri
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: 'https://api.box.com/oauth2/token',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'authorization_code',
+                    code: code,
+                    client_id: Sync.client_id,
+                    client_secret: Sync.client_secret,
+                    redirect_uri: redirectUri
+                }).toString()
             })
         });
         
@@ -623,14 +626,19 @@ async function renovarTokenOAuth() {
     console.log('Renovando token...');
     
     try {
-        const resp = await fetch('https://api.box.com/oauth2/token', {
+        const resp = await fetch(PROXY_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                grant_type: 'refresh_token',
-                refresh_token: refreshToken,
-                client_id: Sync.client_id,
-                client_secret: Sync.client_secret
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: 'https://api.box.com/oauth2/token',
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'refresh_token',
+                    refresh_token: refreshToken,
+                    client_id: Sync.client_id,
+                    client_secret: Sync.client_secret
+                }).toString()
             })
         });
         
@@ -747,10 +755,17 @@ async function baixarGeoJSON(nomeArquivo) {
         });
         
         const data = await resp.json();
-        if (resp.ok) return data;
+        if (resp.ok) {
+            if (typeof data === 'string') try { return JSON.parse(data); } catch(e) {}
+            return data;
+        }
         
         if (data.location) {
-            const resp2 = await fetch(data.location);
+            const resp2 = await fetch(PROXY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: data.location, method: 'GET', headers: {} })
+            });
             if (resp2.ok) return await resp2.json();
         }
         return null;
