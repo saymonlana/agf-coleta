@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "url": "https://agf-coleta.onrender.com",
+    "files": [
+        "index.html",
+        "sw.js",
+        "manifest.json",
+        "css/style.css",
+        "js/app.js",
+        "js/sync.js",
+        "js/map.js",
+        "dados/config_inventario.js",
+        "img/logo_192.png",
+        "img/logo_512.png",
+        "Inventario_Florestal/Propriedades_NES.js",
+        "Inventario_Florestal/Quadrantes.js"
+    ]
+}
