@@ -566,12 +566,11 @@ function atualizarContadorPontos() {
     
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
     const novos = dadosLocais.filter(d => d.status === 'novo').length;
-    const pendentes = FilaSync.obterCountPendentes();
     
     const dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
     const editadosBox = dadosEditados.length;
     
-    const totalPendentes = novos + pendentes + editadosBox;
+    const totalPendentes = novos + editadosBox;
     
     let texto = `${totalBox} registros`;
     if (totalPendentes > 0) {
