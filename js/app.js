@@ -1415,6 +1415,7 @@ function salvarDadosLocais() {
 
 function iniciarGPS() {
     if ('geolocation' in navigator) {
+        mostrarToast('Procurando sinal GPS...', 'info');
         App.positionWatch = navigator.geolocation.watchPosition(
             (position) => {
                 App.currentPosition = {
@@ -1430,13 +1431,20 @@ function iniciarGPS() {
             },
             (error) => {
                 console.error('Erro GPS:', error);
+                let msg = 'Erro ao obter localizacao';
+                if (error.code === 1) msg = 'Permissao de localizacao negada';
+                else if (error.code === 2) msg = 'Localizacao indisponivel';
+                else if (error.code === 3) msg = 'Tempo esgotado para obter localizacao';
+                mostrarToast(msg, 'erro');
             },
             {
                 enableHighAccuracy: true,
-                timeout: 15000,
+                timeout: 30000,
                 maximumAge: 5000
             }
         );
+    } else {
+        mostrarToast('GPS nao disponivel neste dispositivo', 'erro');
     }
 }
 
