@@ -1414,39 +1414,19 @@ function salvarDadosLocais() {
 // ============================================
 
 function iniciarGPS() {
-    if ('geolocation' in navigator) {
-        mostrarToast('Procurando sinal GPS...', 'info');
-        App.positionWatch = navigator.geolocation.watchPosition(
-            (position) => {
-                App.currentPosition = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                };
-                
-                // Atualizar marcador no mapa
-                if (mapa) {
-                    adicionarMarcadorPosicao(App.currentPosition);
-                }
-            },
-            (error) => {
-                console.error('Erro GPS:', error);
-                let msg = 'Erro ao obter localizacao';
-                if (error.code === 1) msg = 'Permissao de localizacao negada';
-                else if (error.code === 2) msg = 'Localizacao indisponivel';
-                else if (error.code === 3) msg = 'Tempo esgotado para obter localizacao';
-                mostrarToast(msg, 'erro');
-            },
-            {
-                enableHighAccuracy: true,
-                timeout: 30000,
-                maximumAge: 5000
-            }
-        );
-    } else {
-        mostrarToast('GPS nao disponivel neste dispositivo', 'erro');
-    }
+    console.log('GPS: Aguardando posicionamento do dispositivo...');
+    mostrarToast('Procurando sinal GPS...', 'info');
 }
+
+// Callback chamado pelo Android nativo quando GPS obtem posicao
+window.onPositionFromAndroid = function(lat, lng, accuracy) {
+    App.currentPosition = { lat: lat, lng: lng, accuracy: accuracy };
+    console.log('GPS recebido do Android:', lat, lng, 'precisao:', accuracy + 'm');
+    
+    if (mapa) {
+        adicionarMarcadorPosicao(App.currentPosition);
+    }
+};
 
 // ============================================
 // UTILIDADES
