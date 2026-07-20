@@ -223,9 +223,9 @@ function adicionarMarcadorPosicao(posicao) {
         radius: posicao.accuracy || 50,
         color: '#4285F4',
         fillColor: '#4285F4',
-        fillOpacity: 0.15,
-        weight: 1,
-        opacity: 0.3
+        fillOpacity: 0.25,
+        weight: 2,
+        opacity: 0.5
     }).addTo(mapa);
     
     // Criar marcador (bolinha azul estilo Google Maps)
@@ -559,6 +559,34 @@ estiloMarcadores.textContent = `
     
     .popup-corpo p:last-child {
         margin-bottom: 0;
+    }
+    
+    .marcador-posicao {
+        background: transparent;
+        border: none;
+    }
+    
+    .marcador-posicao-externo {
+        width: 24px;
+        height: 24px;
+        background: rgba(66, 133, 244, 0.2);
+        border: 2px solid rgba(66, 133, 244, 0.6);
+        border-radius: 50%;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    
+    .marcador-posicao-centro {
+        width: 12px;
+        height: 12px;
+        background: #4285F4;
+        border: 3px solid white;
+        border-radius: 50%;
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
 `;
 document.head.appendChild(estiloMarcadores);
