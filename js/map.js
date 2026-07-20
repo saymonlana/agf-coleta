@@ -72,6 +72,11 @@ function inicializarMapa() {
     mapa.on('click', function(e) {
         console.log('Clique no mapa:', e.latlng);
         
+        // Fechar painel de camadas se aberto
+        if (typeof fecharPainelCamadas === 'function') {
+            fecharPainelCamadas();
+        }
+        
         // Se esta marcando ponto (GPS indisponivel)
         if (App.marcandoPonto) {
             App.pontoMarcado = {
