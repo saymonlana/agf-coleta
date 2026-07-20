@@ -1739,4 +1739,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnFechar) {
         btnFechar.addEventListener('click', fecharPainelCamadas);
     }
+    
+    // Fechar painel ao clicar fora dele
+    document.addEventListener('click', (e) => {
+        const painel = document.getElementById('painel-camadas');
+        const btn = document.getElementById('btn-camadas');
+        if (painel && painel.style.display === 'flex') {
+            if (!painel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+                fecharPainelCamadas();
+            }
+        }
+    });
 });
