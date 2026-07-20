@@ -276,6 +276,7 @@ function adicionarPontoNoMapa(dados) {
     // Criar marcador
     const marcador = L.marker([dados.latitude, dados.longitude], { icon: icon })
         .addTo(layerPontos);
+    marcador.camada = dados.camada || null;
     
     // Criar popup
     const popupContent = criarPopupConteudo(dados);
@@ -438,6 +439,7 @@ function adicionarFeatureNoMapa(feature, lat, lng) {
     // Criar marcador
     const marcador = L.marker([lat, lng], { icon: icon })
         .addTo(layerPontos);
+    marcador.camada = camada || null;
     
     // Criar popup
     const popupContent = criarPopupFeature(feature, camada);
