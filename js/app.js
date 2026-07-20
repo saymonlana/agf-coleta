@@ -206,9 +206,9 @@ async function carregarInventarioDoBox() {
     
     try {
         // Mostrar toast persistente (sem auto-hide)
-        const toast = document.getElementById('toast');
-        toast.textContent = 'Baixando dados do Box...';
-        toast.className = 'toast info ativo';
+        const toast = document.getElementById('toast-persistente');
+        toast.innerHTML = '<span class="spinner"></span>Baixando dados do Box...';
+        toast.className = 'toast-persistente ativo';
         
         await listarGeoJSONInventario();
         
@@ -217,7 +217,7 @@ async function carregarInventarioDoBox() {
         
         if (camadas.length === 0) {
             console.log('Nenhum GeoJSON encontrado no Box');
-            toast.classList.remove('ativo');
+            toast.className = 'toast-persistente';
             return;
         }
         
@@ -246,15 +246,15 @@ async function carregarInventarioDoBox() {
         }
         
         // 5. Esconder toast e mostrar sucesso
-        toast.classList.remove('ativo');
+        toast.className = 'toast-persistente';
         if (cache && cache.length !== novosDados.length) {
             mostrarToast(`${novosDados.length} registros atualizados do Box`, 'sucesso');
         }
         
     } catch (e) {
         console.error('Erro ao carregar inventario do Box:', e);
-        const toast = document.getElementById('toast');
-        toast.classList.remove('ativo');
+        const toast = document.getElementById('toast-persistente');
+        toast.className = 'toast-persistente';
         if (!cache || cache.length === 0) {
             mostrarToast('Erro ao carregar do Box', 'erro');
         }
