@@ -812,61 +812,48 @@ function atualizarFormularioInventario() {
     
     const camada = DADOS_CONFIG_INVENTARIO.camadas[camadaSelecionada];
     if (!camada) return;
-    
-    // Gerar campos da camada (pular DATA porque ja existe)
-    // Pular RESPONSAVEL_DE_CAMPO apenas se a camada tiver esse campo (pois ja e adicionado manualmente)
-    const temResponsavel = camada.campos.some(c => c.nome === 'RESPONSAVEL_DE_CAMPO');
-    camada.campos.forEach(campo => {
+
+    const campos = camada.campos;
+    const temFusteGrupo = campos.some(c => c.tipo === 'fuste_grupo');
+    const camposFuste = campos.filter(c => c.tipo === 'fuste_campo');
+    const camposNormais = campos.filter(c => c.tipo !== 'fuste_grupo' && c.tipo !== 'fuste_campo');
+
+    const temResponsavel = campos.some(c => c.nome === 'RESPONSAVEL_DE_CAMPO');
+
+    camposNormais.forEach(campo => {
         if (campo.nome === 'DATA') return;
         if (campo.nome === 'RESPONSAVEL_DE_CAMPO' && temResponsavel) return;
-        
-        const div = document.createElement('div');
-        div.className = 'campo-formulario';
-        
-        const label = document.createElement('label');
-        label.textContent = campo.label;
-        if (campo.obrigatorio) {
-            label.innerHTML += ' <span class="obrigatorio">*</span>';
-        }
-        div.appendChild(label);
-        
-        let input;
-        
-        if (campo.tipo === 'lista') {
-            input = document.createElement('select');
-            input.innerHTML = '<option value="">Selecione...</option>';
-            (campo.opcoes || []).forEach(opcao => {
-                const option = document.createElement('option');
-                option.value = opcao;
-                option.textContent = opcao;
-                input.appendChild(option);
-            });
-        } else if (campo.tipo === 'textarea') {
-            input = document.createElement('textarea');
-            input.placeholder = campo.placeholder || 'Digite...';
-        } else if (campo.tipo === 'numero' || campo.tipo === 'numero_decimal') {
-            input = document.createElement('input');
-            input.type = 'number';
-            input.step = campo.tipo === 'numero_decimal' ? '0.01' : '1';
-            input.placeholder = `Digite ${campo.label.toLowerCase()}...`;
-        } else if (campo.tipo === 'data') {
-            input = document.createElement('input');
-            input.type = 'date';
-        } else {
-            input = document.createElement('input');
-            input.type = 'text';
-            input.placeholder = campo.placeholder || `Digite ${campo.label.toLowerCase()}...`;
-        }
-        
-        input.name = campo.nome;
-        input.required = campo.obrigatorio;
-        div.appendChild(input);
-        
-        container.appendChild(div);
+        container.appendChild(criarCampoFormulario(campo));
     });
-    
-    // Campo de observacoes geral (se nao existir na camada e nao estiver desativado)
-    const temObservacao = camada.campos.some(c => c.nome === 'OBSERVACOES' || c.nome === 'OBSERVACAO');
+
+    if (temFusteGrupo) {
+        const divFusteGrupo = document.createElement('div');
+        divFusteGrupo.className = 'fuste-grupo-container';
+        divFusteGrupo.id = 'fuste-grupo-container';
+
+        const labelGrupo = document.createElement('label');
+        labelGrupo.innerHTML = 'Fuste (ex: 1 de 3) <span class="obrigatorio">*</span>';
+        divFusteGrupo.appendChild(labelGrupo);
+
+        const inputGrupo = document.createElement('input');
+        inputGrupo.type = 'text';
+        inputGrupo.id = 'input-fuste-grupo';
+        inputGrupo.placeholder = 'Digite: 1 de 3';
+        inputGrupo.required = true;
+        divFusteGrupo.appendChild(inputGrupo);
+
+        const divBlocos = document.createElement('div');
+        divBlocos.id = 'fuste-blocos';
+        divFusteGrupo.appendChild(divBlocos);
+
+        container.appendChild(divFusteGrupo);
+
+        inputGrupo.addEventListener('input', function() {
+            gerarBlocosFustes(this.value, camposFuste, divBlocos);
+        });
+    }
+
+    const temObservacao = campos.some(c => c.nome === 'OBSERVACOES' || c.nome === 'OBSERVACAO');
     const autoObservacaoDesativada = DADOS_CONFIG_INVENTARIO.camadas[camadaSelecionada]?.autoObservacao === false;
     if (!temObservacao && !autoObservacaoDesativada) {
         const divObs = document.createElement('div');
@@ -876,6 +863,99 @@ function atualizarFormularioInventario() {
             <textarea name="OBSERVACOES" placeholder="Digite observacoes..."></textarea>
         `;
         container.appendChild(divObs);
+    }
+}
+
+function criarCampoFormulario(campo) {
+    const div = document.createElement('div');
+    div.className = 'campo-formulario';
+    
+    const label = document.createElement('label');
+    label.textContent = campo.label;
+    if (campo.obrigatorio) {
+        label.innerHTML += ' <span class="obrigatorio">*</span>';
+    }
+    div.appendChild(label);
+    
+    let input;
+    
+    if (campo.tipo === 'lista') {
+        input = document.createElement('select');
+        input.innerHTML = '<option value="">Selecione...</option>';
+        (campo.opcoes || []).forEach(opcao => {
+            const option = document.createElement('option');
+            option.value = opcao;
+            option.textContent = opcao;
+            input.appendChild(option);
+        });
+    } else if (campo.tipo === 'textarea') {
+        input = document.createElement('textarea');
+        input.placeholder = campo.placeholder || 'Digite...';
+    } else if (campo.tipo === 'numero' || campo.tipo === 'numero_decimal') {
+        input = document.createElement('input');
+        input.type = 'number';
+        input.step = campo.tipo === 'numero_decimal' ? '0.01' : '1';
+        input.placeholder = `Digite ${campo.label.toLowerCase()}...`;
+    } else if (campo.tipo === 'data') {
+        input = document.createElement('input');
+        input.type = 'date';
+    } else {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = campo.placeholder || `Digite ${campo.label.toLowerCase()}...`;
+    }
+    
+    input.name = campo.nome;
+    input.required = campo.obrigatorio;
+    div.appendChild(input);
+    
+    return div;
+}
+
+function gerarBlocosFustes(valor, camposFuste, container) {
+    container.innerHTML = '';
+    
+    const regex = /(\d+)\s*(?:de|\/)\s*(\d+)/i;
+    const match = valor.match(regex);
+    
+    if (!match) return;
+    
+    const total = parseInt(match[2]);
+    const atual = parseInt(match[1]);
+    
+    if (total < 1 || total > 50 || atual < 1 || atual > total) return;
+    
+    for (let i = 1; i <= total; i++) {
+        const bloco = document.createElement('div');
+        bloco.className = 'fuste-bloco';
+        
+        const header = document.createElement('div');
+        header.className = 'fuste-bloco-header';
+        header.textContent = `Fuste ${i} de ${total}`;
+        bloco.appendChild(header);
+        
+        camposFuste.forEach(campo => {
+            const div = document.createElement('div');
+            div.className = 'campo-formulario';
+            
+            const label = document.createElement('label');
+            label.textContent = campo.label;
+            if (campo.obrigatorio) {
+                label.innerHTML += ' <span class="obrigatorio">*</span>';
+            }
+            div.appendChild(label);
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = `${campo.nome}_fuste_${i}`;
+            input.placeholder = campo.label;
+            input.required = campo.obrigatorio;
+            div.appendChild(input);
+            
+            bloco.appendChild(div);
+        });
+        
+        container.appendChild(bloco);
     }
 }
 
@@ -1283,6 +1363,27 @@ function handleSalvar() {
             dados.campos[input.name] = input.value;
         }
     });
+
+    // Coletar dados de fustes se existirem
+    const inputFusteGrupo = document.getElementById('input-fuste-grupo');
+    if (inputFusteGrupo && inputFusteGrupo.value) {
+        const regex = /(\d+)\s*(?:de|\/)\s*(\d+)/i;
+        const match = inputFusteGrupo.value.match(regex);
+        if (match) {
+            const total = parseInt(match[2]);
+            dados.campos.fustes = [];
+            for (let i = 1; i <= total; i++) {
+                const fuste = { numero: i, de: total };
+                const camposFuste = Object.keys(dados.campos).filter(k => k.includes(`_fuste_${i}`));
+                camposFuste.forEach(k => {
+                    const nomeOriginal = k.replace(`_fuste_${i}`, '');
+                    fuste[nomeOriginal] = dados.campos[k];
+                    delete dados.campos[k];
+                });
+                dados.campos.fustes.push(fuste);
+            }
+        }
+    }
     
     // Salvar localmente
     if (!App.dadosLocais[App.projetoAtual]) {

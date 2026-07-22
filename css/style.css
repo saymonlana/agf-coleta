@@ -1051,6 +1051,37 @@ html, body {
 }
 
 /* ============================================
+   FUSTES DINAMICOS
+   ============================================ */
+
+.fuste-grupo-container {
+    margin-bottom: var(--espaco-md);
+}
+
+.fuste-bloco {
+    background: #f8f9fa;
+    border-left: 4px solid #27AE60;
+    border-radius: 4px;
+    padding: var(--espaco-md);
+    margin-bottom: var(--espaco-sm);
+}
+
+.fuste-bloco-header {
+    font-weight: 600;
+    color: #27AE60;
+    margin-bottom: var(--espaco-sm);
+    font-size: 14px;
+}
+
+.popup-fuste {
+    background: #f0f0f0;
+    padding: 4px 8px;
+    margin: 4px 0;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* ============================================
    RESPONSIVIDADE
    ============================================ */
 

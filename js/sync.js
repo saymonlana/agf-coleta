@@ -1138,7 +1138,15 @@ function geojsonParaKml(geojson, nomeCamada) {
     kml += '<Document>\n';
     kml += `  <name>${nomeCamada}</name>\n`;
     
-    const estilos = {};
+    kml += `  <Style id="multi_fuste">\n`;
+    kml += `    <IconStyle>\n`;
+    kml += `      <color>ff0000ff</color>\n`;
+    kml += `      <scale>1.2</scale>\n`;
+    kml += `      <Icon>\n`;
+    kml += `        <href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>\n`;
+    kml += `      </Icon>\n`;
+    kml += `    </IconStyle>\n`;
+    kml += `  </Style>\n`;
     
     (geojson.features || []).forEach(feature => {
         const props = feature.properties || {};
@@ -1149,34 +1157,90 @@ function geojsonParaKml(geojson, nomeCamada) {
         const lat = coords[1];
         const alt = coords[2] || 0;
         
-        const nome = props.NOME || props.NOME_DO_ENTREVISTADO || props.nome || '';
+        const numero = props.NUMERO || '';
+        const nomeVulgar = props.NOME_VULGAR || props.NOME_COMUM || '';
+        const nomeCientifico = props.NOME_CIENTIFICO || '';
+        const familia = props.FAMILIA || '';
+        const fustes = props.fustes || [];
         const tecnico = props._tecnico || '';
         const data = props._data_coleta || '';
         
-        kml += '  <Placemark>\n';
-        if (nome) {
-            kml += `    <name>${escapeXml(String(nome))}</name>\n`;
-        }
+        const nomeIndividuo = numero ? `N ${numero}` : (props.NOME || '');
         
-        let desc = '';
-        Object.keys(props).forEach(key => {
-            if (key.startsWith('_')) return;
-            const valor = props[key];
-            if (valor !== undefined && valor !== null && valor !== '') {
-                desc += `${key}: ${escapeXml(String(valor))}\\n`;
+        if (fustes.length > 0) {
+            kml += `  <Folder>\n`;
+            kml += `    <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)} (${fustes.length} fustes)</name>\n`;
+            kml += `    <open>1</open>\n`;
+            
+            fustes.forEach(fuste => {
+                const fusteNum = fuste.numero || 1;
+                const fusteTotal = fuste.de || fustes.length;
+                
+                kml += `    <Placemark>\n`;
+                kml += `      <name>Fuste ${fusteNum} - ${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
+                
+                let desc = '<h3>Fuste ' + fusteNum + ' - ' + escapeXml(nomeIndividuo) + ' - ' + escapeXml(nomeVulgar) + '</h3>';
+                desc += '<table border="1" cellpadding="4">';
+                desc += '<tr><td><b>Indivíduo (N)</b></td><td>' + escapeXml(String(numero)) + '</td></tr>';
+                desc += '<tr><td><b>Fuste</b></td><td>' + fusteNum + ' de ' + fusteTotal + '</td></tr>';
+                if (nomeCientifico) desc += '<tr><td><b>Nome Científico</b></td><td><i>' + escapeXml(nomeCientifico) + '</i></td></tr>';
+                if (nomeVulgar) desc += '<tr><td><b>Nome Comum</b></td><td>' + escapeXml(nomeVulgar) + '</td></tr>';
+                if (familia) desc += '<tr><td><b>Família</b></td><td>' + escapeXml(familia) + '</td></tr>';
+                if (fuste.ALTURA) desc += '<tr><td><b>Altura (m)</b></td><td>' + escapeXml(fuste.ALTURA) + '</td></tr>';
+                if (fuste.CAP) desc += '<tr><td><b>CAP (cm)</b></td><td>' + escapeXml(fuste.CAP) + '</td></tr>';
+                if (fuste.COPA_D1) desc += '<tr><td><b>Copa D1 (m)</b></td><td>' + escapeXml(fuste.COPA_D1) + '</td></tr>';
+                if (fuste.COPA_D2) desc += '<tr><td><b>Copa D2 (m)</b></td><td>' + escapeXml(fuste.COPA_D2) + '</td></tr>';
+                
+                Object.keys(props).forEach(key => {
+                    if (key.startsWith('_') || key === 'fustes' || key === 'NUMERO' || 
+                        key === 'NOME_VULGAR' || key === 'NOME_COMUM' || key === 'NOME_CIENTIFICO' || 
+                        key === 'FAMILIA' || key === 'FUSTE' || key === 'ALTURA' || key === 'CAP' || 
+                        key === 'COPA_D1' || key === 'COPA_D2') return;
+                    const valor = props[key];
+                    if (valor !== undefined && valor !== null && valor !== '') {
+                        desc += '<tr><td><b>' + escapeXml(key) + '</b></td><td>' + escapeXml(String(valor)) + '</td></tr>';
+                    }
+                });
+                
+                if (tecnico) desc += '<tr><td><b>Responsável</b></td><td>' + escapeXml(tecnico) + '</td></tr>';
+                if (data) desc += '<tr><td><b>Data</b></td><td>' + escapeXml(data) + '</td></tr>';
+                desc += '</table><br/>Coordenadas: ' + lat + ', ' + lon;
+                
+                kml += `      <description><![CDATA[${desc}]]></description>\n`;
+                kml += `      <styleUrl>#multi_fuste</styleUrl>\n`;
+                kml += `      <Point>\n`;
+                kml += `        <coordinates>${lon},${lat},${alt}</coordinates>\n`;
+                kml += `      </Point>\n`;
+                kml += `    </Placemark>\n`;
+            });
+            
+            kml += `  </Folder>\n`;
+        } else {
+            kml += '  <Placemark>\n';
+            if (nomeIndividuo) {
+                kml += `    <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
             }
-        });
-        if (tecnico) desc += `Tecnico: ${escapeXml(tecnico)}\\n`;
-        if (data) desc += `Data: ${escapeXml(data)}`;
-        
-        if (desc) {
-            kml += `    <description><![CDATA[${desc.replace(/\\n/g, '<br/>')}]]></description>\n`;
+            
+            let desc = '';
+            Object.keys(props).forEach(key => {
+                if (key.startsWith('_')) return;
+                const valor = props[key];
+                if (valor !== undefined && valor !== null && valor !== '') {
+                    desc += `${key}: ${escapeXml(String(valor))}\\n`;
+                }
+            });
+            if (tecnico) desc += `Tecnico: ${escapeXml(tecnico)}\\n`;
+            if (data) desc += `Data: ${escapeXml(data)}`;
+            
+            if (desc) {
+                kml += `    <description><![CDATA[${desc.replace(/\\n/g, '<br/>')}]]></description>\n`;
+            }
+            
+            kml += '    <Point>\n';
+            kml += `      <coordinates>${lon},${lat},${alt}</coordinates>\n`;
+            kml += '    </Point>\n';
+            kml += '  </Placemark>\n';
         }
-        
-        kml += '    <Point>\n';
-        kml += `      <coordinates>${lon},${lat},${alt}</coordinates>\n`;
-        kml += '    </Point>\n';
-        kml += '  </Placemark>\n';
     });
     
     kml += '</Document>\n';

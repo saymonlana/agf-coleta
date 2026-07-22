@@ -311,12 +311,28 @@ function criarPopupConteudo(dados) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
         
-        const camposMostrar = configCamada.campos || [];
-        camposHtml = camposMostrar.map(campo => {
+        const camposFusteGrupo = (configCamada.campos || []).filter(c => c.tipo === 'fuste_grupo' || c.tipo === 'fuste_campo');
+        const camposNormais = (configCamada.campos || []).filter(c => c.tipo !== 'fuste_grupo' && c.tipo !== 'fuste_campo');
+        
+        camposHtml = camposNormais.map(campo => {
+            if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO') return '';
             const valor = campos[campo.nome] || '';
             if (!valor) return '';
             return `<p><strong>${campo.label}:</strong> ${valor}</p>`;
         }).filter(Boolean).join('');
+        
+        if (campos.fustes && campos.fustes.length > 0) {
+            camposHtml += `<p><strong>Fustes:</strong> ${campos.fustes.length}</p>`;
+            campos.fustes.forEach(fuste => {
+                let fusteHtml = `<div class="popup-fuste"><strong>Fuste ${fuste.numero} de ${fuste.de}:</strong>`;
+                if (fuste.ALTURA) fusteHtml += ` Altura: ${fuste.ALTURA}m`;
+                if (fuste.CAP) fusteHtml += ` | CAP: ${fuste.CAP}cm`;
+                if (fuste.COPA_D1) fusteHtml += ` | D1: ${fuste.COPA_D1}m`;
+                if (fuste.COPA_D2) fusteHtml += ` | D2: ${fuste.COPA_D2}m`;
+                fusteHtml += '</div>';
+                camposHtml += fusteHtml;
+            });
+        }
     }
     
     const status = dados.status || 'novo';
