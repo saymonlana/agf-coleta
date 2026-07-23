@@ -3,7 +3,7 @@
    Funciona offline após primeiro acesso
    ============================================ */
 
-const CACHE_NAME = 'agf-coleta-v38';
+const CACHE_NAME = 'agf-coleta-v39';
 const urlsToCache = [
     './',
     './index.html',
@@ -74,8 +74,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     
-    // Nao interceptar chamadas ao proxy (API calls)
-    if (url.pathname === '/proxy/box' || url.hostname !== location.hostname) {
+    // Nao interceptar chamadas API
+    if (url.pathname === '/proxy/box' || url.pathname === '/upload-excel' || url.pathname === '/generate-excel' || url.hostname !== location.hostname) {
         return;
     }
     
