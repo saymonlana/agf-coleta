@@ -26,15 +26,9 @@ const ExcelExport = {
 function obterCamposCamada(nomeCamada) {
     const config = DADOS_CONFIG_INVENTARIO.camadas[nomeCamada];
     if (!config) return [];
-    const campos = config.campos
+    return config.campos
         .filter(c => !ExcelExport.camposIgnorar.includes(c.nome))
         .map(c => c.nome);
-    const temFuste = config.campos.some(c => c.tipo === 'fuste_grupo');
-    if (temFuste) {
-        const idxFuste = campos.indexOf('FUSTE');
-        campos.splice(idxFuste + 1, 0, 'FUSTE_NUMERO');
-    }
-    return campos;
 }
 
 // ============================================
@@ -44,15 +38,9 @@ function obterCamposCamada(nomeCamada) {
 function obterLabelsCamada(nomeCamada) {
     const config = DADOS_CONFIG_INVENTARIO.camadas[nomeCamada];
     if (!config) return [];
-    const labels = config.campos
+    return config.campos
         .filter(c => !ExcelExport.camposIgnorar.includes(c.nome))
         .map(c => c.label || c.nome);
-    const temFuste = config.campos.some(c => c.tipo === 'fuste_grupo');
-    if (temFuste) {
-        const idxFuste = config.campos.findIndex(c => c.tipo === 'fuste_grupo');
-        labels.splice(idxFuste + 1, 0, 'Fuste N.');
-    }
-    return labels;
 }
 
 // ============================================
@@ -83,8 +71,8 @@ function montarDadosParaExcel(features, campos, nomeCamada) {
             fustes.forEach(fuste => {
                 const row = {};
                 campos.forEach(campo => {
-                    if (campo === 'FUSTE_NUMERO') {
-                        row['FUSTE_NUMERO'] = fuste.numero || '';
+                    if (campo === 'FUSTE') {
+                        row['FUSTE'] = fuste.numero + ' de ' + fuste.de;
                     } else if (camposFuste.includes(campo)) {
                         row[campo] = fuste[campo] !== undefined ? String(fuste[campo]) : '';
                     } else {
@@ -98,13 +86,9 @@ function montarDadosParaExcel(features, campos, nomeCamada) {
         } else {
             const row = {};
             campos.forEach(campo => {
-                if (campo === 'FUSTE_NUMERO') {
-                    row['FUSTE_NUMERO'] = '';
-                } else {
-                    let valor = props[campo] !== undefined ? props[campo] : '';
-                    if (valor === null || valor === undefined) valor = '';
-                    row[campo] = String(valor);
-                }
+                let valor = props[campo] !== undefined ? props[campo] : '';
+                if (valor === null || valor === undefined) valor = '';
+                row[campo] = String(valor);
             });
             linhas.push(row);
         }
