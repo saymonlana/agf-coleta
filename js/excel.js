@@ -138,9 +138,15 @@ async function downloadExcel() {
 // ENVIAR EXCEL PARA O BOX (gera no servidor)
 // ============================================
 
+const EXCEL_API_URL = (location.protocol === 'file:' || location.hostname === '')
+    ? 'https://agf-coleta.onrender.com/generate-excel'
+    : '/generate-excel';
+
 async function enviarExcelParaBox() {
     try {
         if (!await verificarToken()) return null;
+
+        mostrarToast('Baixando dados do Box...', 'info');
 
         const camadasJson = {};
         let totalRegistros = 0;
@@ -163,9 +169,11 @@ async function enviarExcelParaBox() {
             totalRegistros += registros.length;
         }
 
+        mostrarToast(`Gerando planilha com ${totalRegistros} registros...`, 'info');
+
         const fileId = InventarioSync.excel_file_id || null;
 
-        const resp = await fetch('/generate-excel', {
+        const resp = await fetch(EXCEL_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -181,12 +189,15 @@ async function enviarExcelParaBox() {
             InventarioSync.excel_file_id = data.entries[0].id;
             try { localStorage.setItem('agf_excel_file_id', data.entries[0].id); } catch(e) {}
             console.log('Excel salvo no Box:', ExcelExport.nomeArquivo, `(${totalRegistros} registros)`);
+            mostrarToast('Planilha Excel enviada ao Box!', 'sucesso');
             return data.entries[0];
         }
 
+        mostrarToast('Erro ao salvar planilha: ' + (data.error || JSON.stringify(data)), 'erro');
         console.error('Erro ao salvar Excel no Box:', data);
         return null;
     } catch (e) {
+        mostrarToast('Erro ao gerar planilha: ' + e.message, 'erro');
         console.error('Erro ao enviar Excel para Box:', e);
         return null;
     }
