@@ -832,6 +832,13 @@ function atualizarFormularioInventario() {
         
         const labelGrupo = document.createElement('label');
         labelGrupo.innerHTML = 'Fuste (ex: 1 de 3) <span class="obrigatorio">*</span>';
+        labelGrupo.style.display = 'block';
+        labelGrupo.style.fontSize = '12px';
+        labelGrupo.style.fontWeight = '600';
+        labelGrupo.style.color = '#333';
+        labelGrupo.style.marginBottom = '6px';
+        labelGrupo.style.textTransform = 'uppercase';
+        labelGrupo.style.letterSpacing = '0.5px';
         divWrapper.appendChild(labelGrupo);
 
         const inputGrupo = document.createElement('input');
@@ -839,6 +846,14 @@ function atualizarFormularioInventario() {
         inputGrupo.id = 'input-fuste-grupo';
         inputGrupo.placeholder = 'Digite: 1 de 3';
         inputGrupo.required = true;
+        inputGrupo.style.width = '100%';
+        inputGrupo.style.boxSizing = 'border-box';
+        inputGrupo.style.padding = '14px 16px';
+        inputGrupo.style.fontSize = '16px';
+        inputGrupo.style.border = '2px solid #e0e0e0';
+        inputGrupo.style.borderRadius = '8px';
+        inputGrupo.style.background = 'white';
+        inputGrupo.style.color = '#333';
         divWrapper.appendChild(inputGrupo);
 
         container.appendChild(divWrapper);
