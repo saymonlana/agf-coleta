@@ -139,8 +139,8 @@ async function downloadExcel() {
 // ============================================
 
 const EXCEL_API_URL = (location.protocol === 'file:' || location.hostname === '')
-    ? 'https://agf-coleta.onrender.com/generate-excel'
-    : '/generate-excel';
+    ? 'https://agf-coleta.onrender.com/upload-excel'
+    : '/upload-excel';
 
 async function enviarExcelParaBox() {
     try {
@@ -148,40 +148,25 @@ async function enviarExcelParaBox() {
 
         mostrarToast('Baixando dados do Box...', 'info');
 
-        const camadasJson = {};
-        let totalRegistros = 0;
+        const { wb, totalRegistros } = await gerarExcel((msg) => {
+            mostrarToast(msg, 'info');
+        });
 
-        for (const camada of ExcelExport.camadas) {
-            const geojson = await baixarGeoJSON(camada);
-            const features = (geojson && geojson.features) ? geojson.features : [];
-            const campos = obterCamposCamada(camada);
-            const registros = features.map(f => {
-                const props = f.properties || {};
-                const row = {};
-                campos.forEach(campo => {
-                    let valor = props[campo] !== undefined ? props[campo] : '';
-                    if (valor === null || valor === undefined) valor = '';
-                    row[campo] = String(valor);
-                });
-                return row;
-            });
-            camadasJson[camada] = registros;
-            totalRegistros += registros.length;
-        }
-
-        mostrarToast(`Gerando planilha com ${totalRegistros} registros...`, 'info');
+        mostrarToast(`Enviando ${totalRegistros} registros para o Box...`, 'info');
 
         const fileId = InventarioSync.excel_file_id || null;
 
+        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
         const resp = await fetch(EXCEL_API_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                camadas: camadasJson,
-                token: Sync.access_token,
-                file_id: fileId,
-                folder_id: InventarioSync.geojson_folder_id
-            })
+            headers: {
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'X-Token': Sync.access_token,
+                'X-Folder-Id': InventarioSync.geojson_folder_id,
+                'X-File-Id': fileId || ''
+            },
+            body: new Uint8Array(wbout)
         });
 
         const data = await resp.json();

@@ -740,7 +740,8 @@ const InventarioSync = {
     folder_id: '400201285976',
     geojson_folder_id: '400216557385',
     file_ids: {},
-    kml_file_ids: {}
+    kml_file_ids: {},
+    excel_file_id: localStorage.getItem('agf_excel_file_id') || null
 };
 
 async function listarGeoJSONInventario() {

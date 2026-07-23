@@ -35,20 +35,62 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Token, X-Folder-Id, X-File-Id')
         self.end_headers()
     
     def do_POST(self):
         content_length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(content_length)
         
-        if self.path == '/generate-excel':
+        if self.path == '/upload-excel':
+            self.handle_upload_excel(body)
+        elif self.path == '/generate-excel':
             self.handle_generate_excel(body)
         elif self.path == '/proxy/box':
             self.handle_proxy_box(body)
         else:
             self.send_response(404)
             self.end_headers()
+    
+    def handle_upload_excel(self, body):
+        try:
+            token = self.headers.get('X-Token', '')
+            folder_id = self.headers.get('X-Folder-Id', '')
+            file_id = self.headers.get('X-File-Id', '') or None
+            
+            if not token:
+                self.send_json(400, {'error': 'Token nao fornecido'})
+                return
+            
+            file_name = 'Planilha Dados Aplicativo.xlsx'
+            
+            boundary = uuid.uuid4().hex
+            attributes = json.dumps({'name': file_name, 'parent': {'id': folder_id}})
+            
+            attr_part = f'--{boundary}\r\nContent-Disposition: form-data; name="attributes"\r\n\r\n{attributes}\r\n'.encode()
+            file_header = f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{file_name}"\r\nContent-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\r\n\r\n'.encode()
+            closing = f'\r\n--{boundary}--\r\n'.encode()
+            
+            upload_body = attr_part + file_header + body + closing
+            
+            if file_id:
+                url = f'https://upload.box.com/api/2.0/files/{file_id}/content'
+            else:
+                url = 'https://upload.box.com/api/2.0/files/content'
+            
+            req = urllib.request.Request(url, data=upload_body, method='POST')
+            req.add_header('Authorization', f'Bearer {token}')
+            req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')
+            
+            with urllib.request.urlopen(req) as resp:
+                result = json.loads(resp.read().decode('utf-8'))
+                self.send_json(200, result)
+        
+        except urllib.error.HTTPError as e:
+            error_body = e.read().decode('utf-8') if e.fp else ''
+            self.send_json(e.code, {'error': str(e), 'detail': error_body})
+        except Exception as e:
+            self.send_json(500, {'error': str(e)})
     
     def handle_generate_excel(self, body):
         try:
