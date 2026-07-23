@@ -135,38 +135,44 @@ async function downloadExcel() {
 }
 
 // ============================================
-// ENVIAR EXCEL PARA O BOX
+// ENVIAR EXCEL PARA O BOX (gera no servidor)
 // ============================================
 
 async function enviarExcelParaBox() {
     try {
-        const { wb, totalRegistros } = await gerarExcel();
-
-        const base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
-
         if (!await verificarToken()) return null;
 
+        const camadasJson = {};
+        let totalRegistros = 0;
+
+        for (const camada of ExcelExport.camadas) {
+            const geojson = await baixarGeoJSON(camada);
+            const features = (geojson && geojson.features) ? geojson.features : [];
+            const campos = obterCamposCamada(camada);
+            const registros = features.map(f => {
+                const props = f.properties || {};
+                const row = {};
+                campos.forEach(campo => {
+                    let valor = props[campo] !== undefined ? props[campo] : '';
+                    if (valor === null || valor === undefined) valor = '';
+                    row[campo] = String(valor);
+                });
+                return row;
+            });
+            camadasJson[camada] = registros;
+            totalRegistros += registros.length;
+        }
+
         const fileId = InventarioSync.excel_file_id || null;
-        const attributes = {
-            name: ExcelExport.nomeArquivo,
-            parent: { id: InventarioSync.geojson_folder_id }
-        };
 
-        const url = fileId
-            ? `https://upload.box.com/api/2.0/files/${fileId}/content`
-            : 'https://upload.box.com/api/2.0/files/content';
-
-        const resp = await fetch(PROXY_URL, {
+        const resp = await fetch('/generate-excel', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                url: url,
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + Sync.access_token },
-                upload: true,
-                attributes: JSON.stringify(attributes),
-                fileBase64: base64,
-                fileName: ExcelExport.nomeArquivo
+                camadas: camadasJson,
+                token: Sync.access_token,
+                file_id: fileId,
+                folder_id: InventarioSync.geojson_folder_id
             })
         });
 
