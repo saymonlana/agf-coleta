@@ -310,29 +310,33 @@ function criarPopupConteudo(dados) {
     if (camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
+        const camposMostrar = configCamada.campos || [];
+        const temFuste = camposMostrar.some(c => c.tipo === 'fuste_grupo');
+        const fustes = campos.fustes || [];
         
-        const camposFusteGrupo = (configCamada.campos || []).filter(c => c.tipo === 'fuste_grupo' || c.tipo === 'fuste_campo');
-        const camposNormais = (configCamada.campos || []).filter(c => c.tipo !== 'fuste_grupo' && c.tipo !== 'fuste_campo');
-        
-        camposHtml = camposNormais.map(campo => {
+        camposHtml = camposMostrar.map(campo => {
             if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO') return '';
+            if (campo.tipo === 'fuste_campo') return '';
+            if (campo.tipo === 'fuste_grupo') {
+                if (temFuste && fustes.length > 0) {
+                    let html = '';
+                    fustes.forEach(fuste => {
+                        let fusteHtml = `<div class="popup-fuste"><strong>Fuste ${fuste.numero} de ${fuste.de}:</strong>`;
+                        if (fuste.ALTURA) fusteHtml += ` Altura: ${fuste.ALTURA}m`;
+                        if (fuste.CAP) fusteHtml += ` | CAP: ${fuste.CAP}cm`;
+                        if (fuste.COPA_D1) fusteHtml += ` | D1: ${fuste.COPA_D1}m`;
+                        if (fuste.COPA_D2) fusteHtml += ` | D2: ${fuste.COPA_D2}m`;
+                        fusteHtml += '</div>';
+                        html += fusteHtml;
+                    });
+                    return html;
+                }
+                return '';
+            }
             const valor = campos[campo.nome] || '';
             if (!valor) return '';
             return `<p><strong>${campo.label}:</strong> ${valor}</p>`;
         }).filter(Boolean).join('');
-        
-        if (campos.fustes && campos.fustes.length > 0) {
-            camposHtml += `<p><strong>Fustes:</strong> ${campos.fustes.length}</p>`;
-            campos.fustes.forEach(fuste => {
-                let fusteHtml = `<div class="popup-fuste"><strong>Fuste ${fuste.numero} de ${fuste.de}:</strong>`;
-                if (fuste.ALTURA) fusteHtml += ` Altura: ${fuste.ALTURA}m`;
-                if (fuste.CAP) fusteHtml += ` | CAP: ${fuste.CAP}cm`;
-                if (fuste.COPA_D1) fusteHtml += ` | D1: ${fuste.COPA_D1}m`;
-                if (fuste.COPA_D2) fusteHtml += ` | D2: ${fuste.COPA_D2}m`;
-                fusteHtml += '</div>';
-                camposHtml += fusteHtml;
-            });
-        }
     }
     
     const status = dados.status || 'novo';
@@ -490,9 +494,29 @@ function criarPopupFeature(feature, camada) {
     if (camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]) {
         const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
         nomeCamada = configCamada.nome;
-        
         const camposMostrar = configCamada.campos || [];
+        const temFuste = camposMostrar.some(c => c.tipo === 'fuste_grupo');
+        const fustes = props.fustes || [];
+        
         camposHtml = camposMostrar.map(campo => {
+            if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO') return '';
+            if (campo.tipo === 'fuste_campo') return '';
+            if (campo.tipo === 'fuste_grupo') {
+                if (temFuste && fustes.length > 0) {
+                    let html = '';
+                    fustes.forEach(fuste => {
+                        let fusteHtml = `<div class="popup-fuste"><strong>Fuste ${fuste.numero} de ${fuste.de}:</strong>`;
+                        if (fuste.ALTURA) fusteHtml += ` Altura: ${fuste.ALTURA}m`;
+                        if (fuste.CAP) fusteHtml += ` | CAP: ${fuste.CAP}cm`;
+                        if (fuste.COPA_D1) fusteHtml += ` | D1: ${fuste.COPA_D1}m`;
+                        if (fuste.COPA_D2) fusteHtml += ` | D2: ${fuste.COPA_D2}m`;
+                        fusteHtml += '</div>';
+                        html += fusteHtml;
+                    });
+                    return html;
+                }
+                return '';
+            }
             const valor = props[campo.nome] || '';
             if (!valor) return '';
             return `<p><strong>${campo.label}:</strong> ${valor}</p>`;
