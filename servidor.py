@@ -51,7 +51,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     file_b64 = data.get('fileBase64', '')
                     file_name = data.get('fileName', 'file.geojson')
                     file_bytes = base64.b64decode(file_b64)
-                    file_header = f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{file_name}"\r\nContent-Type: application/geo+json\r\n\r\n'.encode()
+                    
+                    ext = file_name.rsplit('.', 1)[-1].lower() if '.' in file_name else ''
+                    content_types = {
+                        'geojson': 'application/geo+json',
+                        'json': 'application/geo+json',
+                        'kml': 'application/vnd.google-earth.kml+xml',
+                        'kmz': 'application/vnd.google-earth.kmz',
+                        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'xls': 'application/vnd.ms-excel',
+                        'csv': 'text/csv',
+                    }
+                    file_ct = content_types.get(ext, 'application/octet-stream')
+                    file_header = f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{file_name}"\r\nContent-Type: {file_ct}\r\n\r\n'.encode()
                     closing = f'\r\n--{boundary}--\r\n'.encode()
                     
                     upload_body = attr_part + file_header + file_bytes + closing
