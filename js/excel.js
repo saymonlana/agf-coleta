@@ -142,8 +142,7 @@ async function enviarExcelParaBox() {
     try {
         const { wb, totalRegistros } = await gerarExcel();
 
-        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-        const base64 = btoa(String.fromCharCode.apply(null, wbout));
+        const base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
 
         if (!await verificarToken()) return null;
 
@@ -173,9 +172,8 @@ async function enviarExcelParaBox() {
 
         const data = await resp.json();
         if (resp.ok && data.entries) {
-            if (!fileId) {
-                InventarioSync.excel_file_id = data.entries[0].id;
-            }
+            InventarioSync.excel_file_id = data.entries[0].id;
+            try { localStorage.setItem('agf_excel_file_id', data.entries[0].id); } catch(e) {}
             console.log('Excel salvo no Box:', ExcelExport.nomeArquivo, `(${totalRegistros} registros)`);
             return data.entries[0];
         }
