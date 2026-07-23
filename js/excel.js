@@ -26,9 +26,15 @@ const ExcelExport = {
 function obterCamposCamada(nomeCamada) {
     const config = DADOS_CONFIG_INVENTARIO.camadas[nomeCamada];
     if (!config) return [];
-    return config.campos
+    const campos = config.campos
         .filter(c => !ExcelExport.camposIgnorar.includes(c.nome))
         .map(c => c.nome);
+    const temFuste = config.campos.some(c => c.tipo === 'fuste_grupo');
+    if (temFuste) {
+        const idxFuste = campos.indexOf('FUSTE');
+        campos.splice(idxFuste + 1, 0, 'FUSTE_NUMERO');
+    }
+    return campos;
 }
 
 // ============================================
@@ -38,9 +44,15 @@ function obterCamposCamada(nomeCamada) {
 function obterLabelsCamada(nomeCamada) {
     const config = DADOS_CONFIG_INVENTARIO.camadas[nomeCamada];
     if (!config) return [];
-    return config.campos
+    const labels = config.campos
         .filter(c => !ExcelExport.camposIgnorar.includes(c.nome))
         .map(c => c.label || c.nome);
+    const temFuste = config.campos.some(c => c.tipo === 'fuste_grupo');
+    if (temFuste) {
+        const idxFuste = config.campos.findIndex(c => c.tipo === 'fuste_grupo');
+        labels.splice(idxFuste + 1, 0, 'Fuste N.');
+    }
+    return labels;
 }
 
 // ============================================
@@ -57,17 +69,48 @@ async function baixarDadosCamadaParaExcel(nomeCamada) {
 // MONTAR DADOS PARA EXCEL
 // ============================================
 
-function montarDadosParaExcel(features, campos) {
-    return features.map(feature => {
+function montarDadosParaExcel(features, campos, nomeCamada) {
+    const config = DADOS_CONFIG_INVENTARIO.camadas[nomeCamada];
+    const temFuste = config && config.campos.some(c => c.tipo === 'fuste_grupo');
+    const camposFuste = temFuste ? config.campos.filter(c => c.tipo === 'fuste_campo').map(c => c.nome) : [];
+    const linhas = [];
+
+    features.forEach(feature => {
         const props = feature.properties || {};
-        const row = {};
-        campos.forEach(campo => {
-            let valor = props[campo] !== undefined ? props[campo] : '';
-            if (valor === null || valor === undefined) valor = '';
-            row[campo] = String(valor);
-        });
-        return row;
+        const fustes = props.fustes;
+
+        if (temFuste && Array.isArray(fustes) && fustes.length > 0) {
+            fustes.forEach(fuste => {
+                const row = {};
+                campos.forEach(campo => {
+                    if (campo === 'FUSTE_NUMERO') {
+                        row['FUSTE_NUMERO'] = fuste.numero || '';
+                    } else if (camposFuste.includes(campo)) {
+                        row[campo] = fuste[campo] !== undefined ? String(fuste[campo]) : '';
+                    } else {
+                        let valor = props[campo] !== undefined ? props[campo] : '';
+                        if (valor === null || valor === undefined) valor = '';
+                        row[campo] = String(valor);
+                    }
+                });
+                linhas.push(row);
+            });
+        } else {
+            const row = {};
+            campos.forEach(campo => {
+                if (campo === 'FUSTE_NUMERO') {
+                    row['FUSTE_NUMERO'] = '';
+                } else {
+                    let valor = props[campo] !== undefined ? props[campo] : '';
+                    if (valor === null || valor === undefined) valor = '';
+                    row[campo] = String(valor);
+                }
+            });
+            linhas.push(row);
+        }
     });
+
+    return linhas;
 }
 
 // ============================================
@@ -99,13 +142,13 @@ async function gerarExcel(progresso) {
             continue;
         }
 
-        const dados = montarDadosParaExcel(features, campos);
+        const dados = montarDadosParaExcel(features, campos, camada);
         const ws = XLSX.utils.json_to_sheet(dados, { header: campos });
 
         ws['!cols'] = campos.map(() => ({ wch: 20 }));
 
         XLSX.utils.book_append_sheet(wb, ws, camada.substring(0, 31));
-        totalRegistros += features.length;
+        totalRegistros += dados.length;
     }
 
     return { wb, totalRegistros };
