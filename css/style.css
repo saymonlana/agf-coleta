@@ -506,6 +506,32 @@ html, body {
     height: 20px;
 }
 
+.btn-exportar-excel {
+    position: absolute;
+    bottom: 140px;
+    right: 12px;
+    width: 40px;
+    height: 40px;
+    background: var(--branco);
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-exportar-excel:active {
+    background: #f0f0f0;
+}
+
+.btn-exportar-excel svg {
+    width: 20px;
+    height: 20px;
+}
+
 .btn-coletar {
     position: absolute;
     bottom: 160px;

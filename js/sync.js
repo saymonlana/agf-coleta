@@ -1096,6 +1096,19 @@ async function sincronizarInventario() {
             enviados += porCamada[camada].length;
         }
         
+        // Gerar e enviar Excel para o Box
+        titulo.textContent = 'Gerando planilha Excel...';
+        status.textContent = 'Criando Planilha Dados Aplicativo.xlsx...';
+        progress.style.width = '92%';
+        
+        try {
+            await enviarExcelParaBox();
+            status.textContent = 'Planilha Excel gerada com sucesso!';
+        } catch (eExcel) {
+            console.error('Erro ao gerar Excel:', eExcel);
+            status.textContent = 'Aviso: Erro ao gerar planilha Excel';
+        }
+        
         // Marcar como sincronizados
         const agora = new Date();
         dadosParaSync.forEach(dado => {
@@ -1109,13 +1122,13 @@ async function sincronizarInventario() {
         localStorage.removeItem('agf_inventario_editados');
         
         titulo.textContent = 'Sincronizacao concluida!';
-        status.textContent = `${novosAdicionados} novos pontos em ${camadas.length} camada(s) + KML gerado`;
+        status.textContent = `${novosAdicionados} novos pontos em ${camadas.length} camada(s) + KML + Excel gerado`;
         progress.style.width = '100%';
         btnFechar.style.display = 'block';
         
         atualizarContadorPontos();
         carregarPontosNoMapa();
-        mostrarToast(`${novosAdicionados} novos + editados sincronizados + KML!`, 'sucesso');
+        mostrarToast(`${novosAdicionados} novos + editados sincronizados + KML + Excel!`, 'sucesso');
         
     } catch (error) {
         console.error('Erro na sincronizacao:', error);

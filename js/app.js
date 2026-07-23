@@ -347,6 +347,13 @@ function configurarEventListeners() {
         });
     } catch(e) {}
     
+    // Botao exportar Excel
+    try {
+        document.getElementById('btn-exportar-excel').addEventListener('click', () => {
+            downloadExcel();
+        });
+    } catch(e) {}
+    
     // Botao foto
     try { document.getElementById('btn-tirar-foto').addEventListener('click', () => { document.getElementById('input-foto').click(); }); } catch(e) {}
     
