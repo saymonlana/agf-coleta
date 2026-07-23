@@ -827,26 +827,25 @@ function atualizarFormularioInventario() {
     });
 
     if (temFusteGrupo) {
-        const divFusteGrupo = document.createElement('div');
-        divFusteGrupo.className = 'fuste-grupo-container';
-        divFusteGrupo.id = 'fuste-grupo-container';
-
+        const divWrapper = document.createElement('div');
+        divWrapper.className = 'campo-formulario';
+        
         const labelGrupo = document.createElement('label');
         labelGrupo.innerHTML = 'Fuste (ex: 1 de 3) <span class="obrigatorio">*</span>';
-        divFusteGrupo.appendChild(labelGrupo);
+        divWrapper.appendChild(labelGrupo);
 
         const inputGrupo = document.createElement('input');
         inputGrupo.type = 'text';
         inputGrupo.id = 'input-fuste-grupo';
         inputGrupo.placeholder = 'Digite: 1 de 3';
         inputGrupo.required = true;
-        divFusteGrupo.appendChild(inputGrupo);
+        divWrapper.appendChild(inputGrupo);
+
+        container.appendChild(divWrapper);
 
         const divBlocos = document.createElement('div');
         divBlocos.id = 'fuste-blocos';
-        divFusteGrupo.appendChild(divBlocos);
-
-        container.appendChild(divFusteGrupo);
+        container.appendChild(divBlocos);
 
         inputGrupo.addEventListener('input', function() {
             gerarBlocosFustes(this.value, camposFuste, divBlocos);

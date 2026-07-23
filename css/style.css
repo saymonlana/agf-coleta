@@ -1054,12 +1054,8 @@ html, body {
    FUSTES DINAMICOS
    ============================================ */
 
-.fuste-grupo-container {
-    margin-bottom: var(--espaco-md);
-}
-
 .fuste-bloco {
-    background: #f8f9fa;
+    background: #f0f7f0;
     border-left: 4px solid #27AE60;
     border-radius: 4px;
     padding: var(--espaco-md);
