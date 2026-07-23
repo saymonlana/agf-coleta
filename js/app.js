@@ -816,17 +816,63 @@ function atualizarFormularioInventario() {
     const campos = camada.campos;
     const temFusteGrupo = campos.some(c => c.tipo === 'fuste_grupo');
     const camposFuste = campos.filter(c => c.tipo === 'fuste_campo');
-    const camposNormais = campos.filter(c => c.tipo !== 'fuste_grupo' && c.tipo !== 'fuste_campo');
-
     const temResponsavel = campos.some(c => c.nome === 'RESPONSAVEL_DE_CAMPO');
+    const idxFuste = campos.findIndex(c => c.tipo === 'fuste_grupo');
+    let fusteInserido = false;
 
-    camposNormais.forEach(campo => {
+    campos.forEach((campo, idx) => {
         if (campo.nome === 'DATA') return;
         if (campo.nome === 'RESPONSAVEL_DE_CAMPO' && temResponsavel) return;
+        if (campo.tipo === 'fuste_campo') return;
+
+        if (campo.tipo === 'fuste_grupo' && temFusteGrupo) {
+            const divWrapper = document.createElement('div');
+            divWrapper.className = 'campo-formulario';
+            
+            const labelGrupo = document.createElement('label');
+            labelGrupo.innerHTML = 'Fuste (ex: 1 de 3) <span class="obrigatorio">*</span>';
+            labelGrupo.style.display = 'block';
+            labelGrupo.style.fontSize = '12px';
+            labelGrupo.style.fontWeight = '600';
+            labelGrupo.style.color = '#333';
+            labelGrupo.style.marginBottom = '6px';
+            labelGrupo.style.textTransform = 'uppercase';
+            labelGrupo.style.letterSpacing = '0.5px';
+            divWrapper.appendChild(labelGrupo);
+
+            const inputGrupo = document.createElement('input');
+            inputGrupo.type = 'text';
+            inputGrupo.id = 'input-fuste-grupo';
+            inputGrupo.placeholder = 'Digite: 1 de 3';
+            inputGrupo.required = true;
+            inputGrupo.style.width = '100%';
+            inputGrupo.style.boxSizing = 'border-box';
+            inputGrupo.style.padding = '14px 16px';
+            inputGrupo.style.fontSize = '16px';
+            inputGrupo.style.border = '2px solid #e0e0e0';
+            inputGrupo.style.borderRadius = '8px';
+            inputGrupo.style.background = 'white';
+            inputGrupo.style.color = '#333';
+            divWrapper.appendChild(inputGrupo);
+
+            container.appendChild(divWrapper);
+
+            const divBlocos = document.createElement('div');
+            divBlocos.id = 'fuste-blocos';
+            container.appendChild(divBlocos);
+
+            inputGrupo.addEventListener('input', function() {
+                gerarBlocosFustes(this.value, camposFuste, divBlocos);
+            });
+
+            fusteInserido = true;
+            return;
+        }
+
         container.appendChild(criarCampoFormulario(campo));
     });
 
-    if (temFusteGrupo) {
+    if (!fusteInserido && temFusteGrupo) {
         const divWrapper = document.createElement('div');
         divWrapper.className = 'campo-formulario';
         
