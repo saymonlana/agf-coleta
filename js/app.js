@@ -709,6 +709,7 @@ async function abrirProjeto(projetoId) {
     }
     
     if (isCmd) {
+        document.getElementById('contador-pontos').textContent = '0 registros';
         return;
     }
     
