@@ -340,8 +340,12 @@ function configurarEventListeners() {
         });
     });
     
-    // Botao voltar (mapa -> projetos)
-    try { document.getElementById('btn-voltar').addEventListener('click', () => { mostrarTela('tela-projetos'); }); } catch(e) {}
+    // Botao voltar (mapa -> clientes)
+    try { document.getElementById('btn-voltar').addEventListener('click', () => { 
+        document.getElementById('lista-clientes').style.display = 'block';
+        document.getElementById('lista-projetos-cliente').style.display = 'none';
+        mostrarTela('tela-cliente'); 
+    }); } catch(e) {}
     
     // Botao voltar (cliente -> projetos)
     try { document.getElementById('btn-voltar-projetos').addEventListener('click', () => { 
@@ -557,10 +561,15 @@ window.addEventListener('popstate', function(e) {
     
     if (telaAtual === 'tela-mapa') {
         telaVoltar = 'tela-cliente';
-    } else if (telaAtual === 'tela-cliente') {
-        telaVoltar = 'tela-projetos';
         document.getElementById('lista-clientes').style.display = 'block';
         document.getElementById('lista-projetos-cliente').style.display = 'none';
+    } else if (telaAtual === 'tela-cliente' && document.getElementById('lista-projetos-cliente').style.display === 'block') {
+        // Está na lista de projetos do cliente, volta para lista de clientes
+        document.getElementById('lista-clientes').style.display = 'block';
+        document.getElementById('lista-projetos-cliente').style.display = 'none';
+        return;
+    } else if (telaAtual === 'tela-cliente') {
+        telaVoltar = 'tela-projetos';
     } else if (telaAtual === 'tela-projetos') {
         telaVoltar = 'tela-login';
     } else if (telaAtual === 'tela-coleta') {
@@ -596,6 +605,8 @@ function mostrarProjetosDoCliente(clienteId) {
     // Esconder lista de clientes e mostrar projetos
     document.getElementById('lista-clientes').style.display = 'none';
     document.getElementById('lista-projetos-cliente').style.display = 'block';
+    
+    history.pushState({ tela: 'tela-projetos-cliente' }, '', '');
     
     const container = document.getElementById('projetos-do-cliente');
     container.innerHTML = '';
