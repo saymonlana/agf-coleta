@@ -693,19 +693,20 @@ async function abrirProjeto(projetoId) {
     mostrarTela('tela-mapa');
     
     if (!mapa) {
-        inicializarMapa();
-    }
-    
-    setTimeout(() => {
-        if (mapa) {
+        if (isCmd) {
+            inicializarMapa(-19.036886, -43.424913);
+        } else {
+            inicializarMapa();
+        }
+    } else {
+        setTimeout(() => {
             mapa.invalidateSize();
-            
             if (isCmd) {
                 mapa.setView([-19.036886, -43.424913], 13);
                 limparMarcadores();
             }
-        }
-    }, 300);
+        }, 300);
+    }
     
     if (isCmd) {
         return;

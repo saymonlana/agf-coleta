@@ -18,14 +18,14 @@ let camadasInventarioCarregadas = false;
 // INICIALIZAR MAPA
 // ============================================
 
-function inicializarMapa() {
+function inicializarMapa(lat, lng) {
     if (typeof L === 'undefined') {
         document.getElementById('mapa').innerHTML = '<div style="padding:40px;text-align:center;color:#c00;"><h3>Erro: Leaflet nao carregou</h3><p>Verifique sua conexao com a internet e recarregue a pagina.</p></div>';
         return;
     }
     
-    const latInicial = -20.3132;
-    const lngInicial = -42.6067;
+    const latInicial = lat || -20.3132;
+    const lngInicial = lng || -42.6067;
     
     // Criar mapa
     mapa = L.map('mapa', {
