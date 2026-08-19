@@ -370,15 +370,14 @@ html, body {
 }
 
 .projeto-logo {
-    width: 56px;
-    height: 56px;
+    width: 80px;
+    height: 80px;
     border-radius: var(--raio-medio);
     overflow: hidden;
     margin-bottom: var(--espaco-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: white;
 }
 
 .projeto-logo img {
