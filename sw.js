@@ -3,7 +3,7 @@
    Funciona offline após primeiro acesso
    ============================================ */
 
-const CACHE_NAME = 'agf-coleta-v46';
+const CACHE_NAME = 'agf-coleta-v47';
 const urlsToCache = [
     './',
     './index.html',
