@@ -550,6 +550,8 @@ function mostrarTela(telaId, pushHistory) {
 function voltarTelaCliente() {
     document.getElementById('lista-clientes').style.display = 'block';
     document.getElementById('lista-projetos-cliente').style.display = 'none';
+    document.getElementById('titulo-cliente').textContent = 'Selecionar Cliente';
+    document.getElementById('subtitulo-cliente').textContent = 'Escolha o cliente deste trabalho';
 }
 
 window.addEventListener('popstate', function(e) {
