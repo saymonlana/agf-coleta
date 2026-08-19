@@ -607,7 +607,7 @@ function mostrarProjetosDoCliente(clienteId) {
         'samarco': [],
         'gerdau': [],
         'anglo': [
-            { id: 'anglo_projeto1', nome: 'Projeto Anglo 1', descricao: 'Em configuracao' }
+            { id: 'anglo_projeto1', nome: '2284_023 PAEBM - SAG', descricao: 'Em configuracao' }
         ]
     };
     
