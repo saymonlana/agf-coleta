@@ -283,15 +283,6 @@ html, body {
     text-align: center;
 }
 
-.header-info-center {
-    position: absolute;
-    left: 0;
-    right: 0;
-    text-align: center;
-    z-index: 10;
-    white-space: nowrap;
-}
-
 .header-info h1 {
     font-size: 18px;
     font-weight: 600;
