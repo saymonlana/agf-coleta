@@ -259,6 +259,7 @@ html, body {
     color: var(--branco);
     box-shadow: var(--sombra-leve);
     z-index: 100;
+    position: relative;
 }
 
 .header-logo {
@@ -278,7 +279,9 @@ html, body {
 }
 
 .header-info {
-    flex: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     text-align: center;
 }
 
