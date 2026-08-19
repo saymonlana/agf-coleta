@@ -701,7 +701,7 @@ async function abrirProjeto(projetoId) {
             mapa.invalidateSize();
             
             if (isCmd) {
-                mapa.setView([-18.5947, -43.0638], 13);
+                mapa.setView([-19.036886, -43.424913], 13);
                 limparMarcadores();
             }
         }
