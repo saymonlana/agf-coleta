@@ -12,6 +12,8 @@ import urllib.error
 import base64
 import uuid
 import io
+import ssl
+import traceback
 
 try:
     from openpyxl import Workbook
@@ -29,6 +31,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        self.send_header('Pragma', 'no-cache')
+        self.send_header('Expires', '0')
         super().end_headers()
     
     def do_OPTIONS(self):
@@ -64,6 +68,23 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             
             file_name = 'Planilha Dados Aplicativo.xlsx'
             
+            if not file_id:
+                try:
+                    list_url = f'https://api.box.com/2.0/folders/{folder_id}/items?limit=1000&fields=name,id'
+                    list_req = urllib.request.Request(list_url)
+                    list_req.add_header('Authorization', f'Bearer {token}')
+                    ctx_list = ssl.create_default_context()
+                    ctx_list.check_hostname = False
+                    ctx_list.verify_mode = ssl.CERT_NONE
+                    with urllib.request.urlopen(list_req, context=ctx_list) as list_resp:
+                        list_data = json.loads(list_resp.read().decode('utf-8'))
+                        for item in list_data.get('entries', []):
+                            if item.get('type') == 'file' and item.get('name') == file_name:
+                                file_id = item['id']
+                                break
+                except Exception as e:
+                    print(f'Erro ao buscar arquivo existente: {e}')
+            
             boundary = uuid.uuid4().hex
             attributes = json.dumps({'name': file_name, 'parent': {'id': folder_id}})
             
@@ -82,7 +103,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             req.add_header('Authorization', f'Bearer {token}')
             req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')
             
-            with urllib.request.urlopen(req) as resp:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, context=ctx) as resp:
                 result = json.loads(resp.read().decode('utf-8'))
                 self.send_json(200, result)
         
@@ -142,7 +167,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             req.add_header('Authorization', f'Bearer {token}')
             req.add_header('Content-Type', f'multipart/form-data; boundary={boundary}')
             
-            with urllib.request.urlopen(req) as resp:
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, context=ctx) as resp:
                 result = json.loads(resp.read().decode('utf-8'))
                 self.send_json(200, result)
         
@@ -219,21 +248,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     elif isinstance(payload, str):
                         req.data = payload.encode('utf-8')
             
-            with urllib.request.urlopen(req) as resp:
-                response_data = resp.read().decode('utf-8')
+            print(f'[PROXY] {method} {url[:120]}')
+            
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            
+            with urllib.request.urlopen(req, context=ctx, timeout=60) as resp:
+                response_data = resp.read()
+                print(f'[PROXY] OK {resp.status} len={len(response_data)}')
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.end_headers()
-                self.wfile.write(response_data.encode('utf-8'))
+                self.wfile.write(response_data)
         
         except urllib.error.HTTPError as e:
             error_body = e.read().decode('utf-8') if e.fp else ''
+            print(f'[PROXY] HTTPError {e.code}: {error_body[:500]}')
             self.send_response(e.code)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
             self.wfile.write(json.dumps({'error': str(e), 'detail': error_body}).encode('utf-8'))
         
         except Exception as e:
+            print(f'[PROXY] Error: {e}')
+            traceback.print_exc()
             self.send_response(500)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()

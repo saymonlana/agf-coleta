@@ -101,7 +101,7 @@ function montarDadosParaExcel(features, campos, nomeCamada) {
 // GERAR WORKBOOK EXCEL
 // ============================================
 
-async function gerarExcel(progresso) {
+async function gerarExcel(progresso, dadosPreCarregados) {
     if (typeof XLSX === 'undefined') {
         throw new Error('Biblioteca XLSX nao carregada.');
     }
@@ -113,10 +113,15 @@ async function gerarExcel(progresso) {
         const camada = ExcelExport.camadas[i];
 
         if (progresso) {
-            progresso(`Baixando ${camada}...`, Math.round((i / ExcelExport.camadas.length) * 80));
+            progresso(`Processando ${camada}...`, Math.round((i / ExcelExport.camadas.length) * 80));
         }
 
-        const features = await baixarDadosCamadaParaExcel(camada);
+        let features;
+        if (dadosPreCarregados && dadosPreCarregados[camada]) {
+            features = dadosPreCarregados[camada];
+        } else {
+            features = await baixarDadosCamadaParaExcel(camada);
+        }
         const campos = obterCamposCamada(camada);
         const labels = obterLabelsCamada(camada);
 
@@ -169,21 +174,29 @@ const EXCEL_API_URL = (location.protocol === 'file:' || location.hostname === ''
     ? 'https://agf-coleta.onrender.com/upload-excel'
     : '/upload-excel';
 
-async function enviarExcelParaBox() {
+async function enviarExcelParaBox(dadosPreCarregados) {
     try {
-        if (!await verificarToken()) return null;
+        console.log('[EXCEL] Iniciando geracao...');
+        if (!await verificarToken()) {
+            console.error('[EXCEL] Token invalido');
+            return null;
+        }
 
-        mostrarToast('Baixando dados do Box...', 'info');
+        console.log('[EXCEL] Dados pre-carregados:', dadosPreCarregados ? Object.keys(dadosPreCarregados) : 'nenhum');
+        mostrarToast('Preparando dados para planilha...', 'info');
 
         const { wb, totalRegistros } = await gerarExcel((msg) => {
             mostrarToast(msg, 'info');
-        });
+        }, dadosPreCarregados);
 
+        console.log('[EXCEL] Workbook gerado:', totalRegistros, 'registros');
         mostrarToast(`Enviando ${totalRegistros} registros para o Box...`, 'info');
 
         const fileId = InventarioSync.excel_file_id || null;
+        console.log('[EXCEL] File ID:', fileId, '| Folder ID:', InventarioSync.geojson_folder_id);
 
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        console.log('[EXCEL] Tamanho do arquivo:', wbout.length, 'bytes');
 
         const resp = await fetch(EXCEL_API_URL, {
             method: 'POST',
@@ -196,21 +209,24 @@ async function enviarExcelParaBox() {
             body: new Uint8Array(wbout)
         });
 
+        console.log('[EXCEL] Resposta HTTP:', resp.status, resp.statusText);
         const data = await resp.json();
+        console.log('[EXCEL] Resposta Box:', JSON.stringify(data).substring(0, 500));
+        
         if (resp.ok && data.entries) {
             InventarioSync.excel_file_id = data.entries[0].id;
             try { localStorage.setItem('agf_excel_file_id', data.entries[0].id); } catch(e) {}
-            console.log('Excel salvo no Box:', ExcelExport.nomeArquivo, `(${totalRegistros} registros)`);
+            console.log('[EXCEL] Salvo com sucesso! ID:', data.entries[0].id);
             mostrarToast('Planilha Excel enviada ao Box!', 'sucesso');
             return data.entries[0];
         }
 
+        console.error('[EXCEL] Falha no upload:', data);
         mostrarToast('Erro ao salvar planilha: ' + (data.error || JSON.stringify(data)), 'erro');
-        console.error('Erro ao salvar Excel no Box:', data);
         return null;
     } catch (e) {
+        console.error('[EXCEL] Excecao:', e);
         mostrarToast('Erro ao gerar planilha: ' + e.message, 'erro');
-        console.error('Erro ao enviar Excel para Box:', e);
         return null;
     }
 }

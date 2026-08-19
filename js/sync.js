@@ -758,7 +758,10 @@ async function listarGeoJSONInventario() {
             if (item.type === 'file') {
                 if (item.name.endsWith('.kml')) {
                     InventarioSync.kml_file_ids[item.name.replace('.kml', '')] = item.id;
-                } else {
+                } else if (item.name.endsWith('.xlsx')) {
+                    InventarioSync.excel_file_id = item.id;
+                    try { localStorage.setItem('agf_excel_file_id', item.id); } catch(e) {}
+                } else if ((item.name.endsWith('.geojson') || item.name.endsWith('.json')) && item.name !== 'schemas.json') {
                     const nome = item.name.replace('.geojson', '').replace('.json', '');
                     InventarioSync.file_ids[nome] = item.id;
                 }
@@ -795,10 +798,18 @@ async function baixarGeoJSON(nomeArquivo) {
             })
         });
         
-        const data = await resp.json();
-        if (resp.ok) {
-            if (typeof data === 'string') try { return JSON.parse(data); } catch(e) {}
+        const text = await resp.text();
+        if (!resp.ok) {
+            console.error('Box retornou erro:', resp.status, text.substring(0, 200));
+            return null;
+        }
+        
+        try {
+            const data = JSON.parse(text);
             return data;
+        } catch(parseErr) {
+            console.error('Resposta nao e JSON:', text.substring(0, 100));
+            return null;
         }
         
         if (data.location) {
@@ -1005,6 +1016,7 @@ async function sincronizarInventario() {
         const camadas = Object.keys(porCamada);
         let enviados = 0;
         let novosAdicionados = 0;
+        const geojsonsAtualizados = {};
         
         for (const camada of camadas) {
             titulo.textContent = `Sincronizando ${camada}...`;
@@ -1093,18 +1105,25 @@ async function sincronizarInventario() {
             const conteudoKml = geojsonParaKml(geojson, camada);
             await salvarKml(camada, conteudoKml);
             
+            // Guardar geojson atualizado para o Excel
+            geojsonsAtualizados[camada] = geojson.features || [];
+            
             status.textContent = `${camada}: ${adicionadosCamada} novos, ${atualizadosCamada} atualizados (${geojson.features.length} total)`;
             enviados += porCamada[camada].length;
         }
         
-        // Gerar e enviar Excel para o Box
+        // Gerar e enviar Excel para o Box (usando dados ja carregados)
         titulo.textContent = 'Gerando planilha Excel...';
         status.textContent = 'Criando Planilha Dados Aplicativo.xlsx...';
         progress.style.width = '92%';
         
         try {
-            await enviarExcelParaBox();
-            status.textContent = 'Planilha Excel gerada com sucesso!';
+            const resultadoExcel = await enviarExcelParaBox(geojsonsAtualizados);
+            if (resultadoExcel) {
+                status.textContent = 'Planilha Excel gerada com sucesso!';
+            } else {
+                status.textContent = 'Aviso: Erro ao gerar planilha Excel';
+            }
         } catch (eExcel) {
             console.error('Erro ao gerar Excel:', eExcel);
             status.textContent = 'Aviso: Erro ao gerar planilha Excel';

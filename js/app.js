@@ -193,6 +193,7 @@ async function carregarInventarioDoBox() {
     if (cache && cache.length > 0) {
         App.dadosBox['inventario'] = cache;
         console.log('Carregado do cache:', cache.length, 'registros');
+        mostrarToast(`Dados do cache (${cache.length} registros) - atualizando...`, 'info');
     }
     
     // 2. Buscar do Box em background
@@ -200,6 +201,8 @@ async function carregarInventarioDoBox() {
         console.log('Sem token Box, usando cache');
         if (!cache || cache.length === 0) {
             mostrarToast('Sem conexao com Box. Dados locais apenas.', 'aviso');
+        } else {
+            mostrarToast('Sem token Box. Usando dados do cache.', 'aviso');
         }
         return;
     }
@@ -218,12 +221,16 @@ async function carregarInventarioDoBox() {
         if (camadas.length === 0) {
             console.log('Nenhum GeoJSON encontrado no Box');
             toast.className = 'toast-persistente';
+            if (cache && cache.length > 0) {
+                mostrarToast('Nenhum dado no Box. Usando dados do cache.', 'aviso');
+            }
             return;
         }
         
         const novosDados = [];
         const resultados = await Promise.all(camadas.map(camada => baixarGeoJSON(camada)));
         
+        let downloadFalhou = false;
         resultados.forEach((geojson, i) => {
             if (geojson && geojson.features) {
                 geojson.features.forEach(f => {
@@ -231,8 +238,16 @@ async function carregarInventarioDoBox() {
                     novosDados.push(f);
                 });
                 console.log(`  ${camadas[i]}: ${geojson.features.length} registros`);
+            } else {
+                downloadFalhou = true;
             }
         });
+        
+        if (downloadFalhou && novosDados.length === 0) {
+            toast.className = 'toast-persistente';
+            mostrarToast('Erro ao baixar dados do Box. Usando dados do cache.', 'erro');
+            return;
+        }
         
         // 3. Salvar no cache
         App.dadosBox['inventario'] = novosDados;
@@ -249,6 +264,8 @@ async function carregarInventarioDoBox() {
         toast.className = 'toast-persistente';
         if (cache && cache.length !== novosDados.length) {
             mostrarToast(`${novosDados.length} registros atualizados do Box`, 'sucesso');
+        } else if (!cache || cache.length === 0) {
+            mostrarToast(`${novosDados.length} registros carregados do Box`, 'sucesso');
         }
         
     } catch (e) {
@@ -257,6 +274,8 @@ async function carregarInventarioDoBox() {
         toast.className = 'toast-persistente';
         if (!cache || cache.length === 0) {
             mostrarToast('Erro ao carregar do Box', 'erro');
+        } else {
+            mostrarToast('Erro ao atualizar do Box. Usando dados do cache.', 'erro');
         }
     }
 }
