@@ -562,31 +562,24 @@ window.addEventListener('popstate', function(e) {
     const telaAtual = telaAtiva ? telaAtiva.id : '';
     
     if (state.tela === telaAtual) {
-        // Mesma tela, mas pode mudar o sub-view
         if (state.tela === 'tela-cliente') {
-            if (state.sub === 'projetos') {
-                document.getElementById('lista-clientes').style.display = 'none';
-                document.getElementById('lista-projetos-cliente').style.display = 'block';
-            } else {
-                document.getElementById('lista-clientes').style.display = 'block';
-                document.getElementById('lista-projetos-cliente').style.display = 'none';
-            }
+            voltarTelaCliente();
         }
         return;
     }
     
-    // Mudar de tela
     document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
     document.getElementById(state.tela).classList.add('ativa');
     
-    // Resetar sub-views
     if (state.tela === 'tela-cliente') {
         if (state.sub === 'projetos') {
+            const nomesClientes = { 'vale': 'Vale', 'samarco': 'Samarco', 'gerdau': 'Gerdau', 'anglo': 'Anglo American' };
             document.getElementById('lista-clientes').style.display = 'none';
             document.getElementById('lista-projetos-cliente').style.display = 'block';
+            document.getElementById('titulo-cliente').textContent = nomesClientes[App.clienteAtual] || App.clienteAtual;
+            document.getElementById('subtitulo-cliente').textContent = 'Escolha o projeto';
         } else {
-            document.getElementById('lista-clientes').style.display = 'block';
-            document.getElementById('lista-projetos-cliente').style.display = 'none';
+            voltarTelaCliente();
         }
     }
     
