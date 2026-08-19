@@ -601,16 +601,33 @@ function mostrarProjetosDoCliente(clienteId) {
     document.getElementById('titulo-cliente').textContent = nomesClientes[clienteId] || clienteId;
     document.getElementById('subtitulo-cliente').textContent = 'Escolha o projeto';
     
-    // Lista de projetos por cliente (configuravel)
-    const projetosPorCliente = {
-        'vale': [],
-        'samarco': [],
-        'gerdau': [],
-        'anglo': [
-            { id: 'anglo_projeto1', nome: '2284_023 PAEBM - SAG', descricao: 'Em configuracao' }
-        ]
+    // Lista de projetos por cliente e por tipo de projeto
+    const projetosPorClienteEProjeto = {
+        'paebm': {
+            'vale': [],
+            'samarco': [],
+            'gerdau': [],
+            'anglo': [
+                { id: 'anglo_projeto1', nome: '2284_023 PAEBM - SAG', descricao: 'Em configuracao' }
+            ]
+        },
+        'inventario': {
+            'vale': [],
+            'samarco': [],
+            'gerdau': [],
+            'anglo': [
+                { id: 'anglo_inv1', nome: 'Projeto Anglo Inventario', descricao: 'Em configuracao' }
+            ]
+        },
+        'fauna': {
+            'vale': [],
+            'samarco': [],
+            'gerdau': [],
+            'anglo': []
+        }
     };
     
+    const projetosPorCliente = projetosPorClienteEProjeto[App.projetoAtual] || {};
     const projetos = projetosPorCliente[clienteId] || [];
     
     if (projetos.length === 0) {
