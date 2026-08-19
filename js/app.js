@@ -649,6 +649,7 @@ function mostrarProjetosDoCliente(clienteId) {
             <div class="projeto-seta">›</div>
         `;
         card.addEventListener('click', () => {
+            App.projetoClienteAtual = proj;
             abrirProjeto(App.projetoAtual);
         });
         container.appendChild(card);
@@ -663,28 +664,27 @@ async function abrirProjeto(projetoId) {
     App.projetoAtual = projetoId;
     
     const projeto = App.projetos.find(p => p.id === projetoId);
-    const nomeProjeto = projeto ? projeto.nome : 'Projeto';
+    const nomeProjeto = App.projetoClienteAtual ? App.projetoClienteAtual.nome : (projeto ? projeto.nome : 'Projeto');
     
     document.getElementById('titulo-projeto').textContent = nomeProjeto;
     atualizarContadorPontos();
     
-    // Mostrar/esconder botão de camadas (só para Inventário)
+    // Verificar se é o projeto CMD (mapa em branco)
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    
     const btnCamadas = document.getElementById('btn-camadas');
     if (btnCamadas) {
         btnCamadas.style.display = projetoId === 'inventario' ? 'flex' : 'none';
     }
     
-    // Controlar botão de coleta
     const btnColetar = document.getElementById('btn-coletar');
     const crosshair = document.getElementById('crosshair');
     if (btnColetar) {
         if (projetoId === 'inventario') {
-            // No Inventário, esconder até selecionar camada
             btnColetar.style.display = 'none';
             if (crosshair) crosshair.style.display = 'none';
             CamadasConfig.camadaAtiva = null;
         } else {
-            // Em outros projetos, mostrar normalmente
             btnColetar.style.display = 'flex';
             if (crosshair) crosshair.style.display = 'none';
         }
@@ -696,6 +696,17 @@ async function abrirProjeto(projetoId) {
         inicializarMapa();
     } else {
         setTimeout(() => { mapa.invalidateSize(); }, 200);
+    }
+    
+    // Se for CMD, centralizar em Conceição do Mato Dentro e limpar mapa
+    if (isCmd) {
+        setTimeout(() => {
+            if (mapa) {
+                mapa.setView([-18.5947, -43.0638], 13);
+                limparMarcadores();
+            }
+        }, 300);
+        return;
     }
     
     if (projetoId === 'inventario') {

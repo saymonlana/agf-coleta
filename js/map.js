@@ -630,3 +630,8 @@ estiloMarcadores.textContent = `
     }
 `;
 document.head.appendChild(estiloMarcadores);
+
+function limparMarcadores() {
+    if (layerPontos) layerPontos.clearLayers();
+    marcadores = [];
+}
