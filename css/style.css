@@ -285,8 +285,8 @@ html, body {
 
 .header-info-center {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    right: 0;
     text-align: center;
     z-index: 10;
     white-space: nowrap;
