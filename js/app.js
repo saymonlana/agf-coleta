@@ -694,18 +694,20 @@ async function abrirProjeto(projetoId) {
     
     if (!mapa) {
         inicializarMapa();
-    } else {
-        setTimeout(() => { mapa.invalidateSize(); }, 200);
     }
     
-    // Se for CMD, centralizar em Conceição do Mato Dentro e limpar mapa
-    if (isCmd) {
-        setTimeout(() => {
-            if (mapa) {
+    setTimeout(() => {
+        if (mapa) {
+            mapa.invalidateSize();
+            
+            if (isCmd) {
                 mapa.setView([-18.5947, -43.0638], 13);
                 limparMarcadores();
             }
-        }, 300);
+        }
+    }, 300);
+    
+    if (isCmd) {
         return;
     }
     
