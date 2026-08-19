@@ -369,6 +369,24 @@ html, body {
     margin-bottom: var(--espaco-sm);
 }
 
+.projeto-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--raio-medio);
+    overflow: hidden;
+    margin-bottom: var(--espaco-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+}
+
+.projeto-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
 .projeto-info {
     flex: 1;
     text-align: center;

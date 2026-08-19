@@ -3,7 +3,7 @@
    Funciona offline após primeiro acesso
    ============================================ */
 
-const CACHE_NAME = 'agf-coleta-v47';
+const CACHE_NAME = 'agf-coleta-v48';
 const urlsToCache = [
     './',
     './index.html',
@@ -21,7 +21,11 @@ const urlsToCache = [
     './dados/Moradores_PAEBM_SAG.js',
     './dados/Animais_Silvestres_Exoticos_PAEBM_SAG.js',
     './dados/Producao_Agropecuaria_PAEBM_SAG.js',
-    './dados/Centro_Urbano.js'
+    './dados/Centro_Urbano.js',
+    './Logo_Clientes/Vale.png',
+    './Logo_Clientes/Samarco.png',
+    './Logo_Clientes/Gerdau.png',
+    './Logo_Clientes/Anglo.png'
 ];
 
 // ============================================
