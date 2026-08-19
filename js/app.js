@@ -288,16 +288,7 @@ async function carregarInventarioDoBox() {
 
 function atualizarListaProjetos() {
     const container = document.getElementById('lista-projetos');
-    const cardPaebm = container.querySelector('[data-projeto="paebm"]');
     const cardInventario = container.querySelector('[data-projeto="inventario"]');
-    
-    if (cardPaebm && App.dadosBox['paebm']) {
-        const total = App.dadosBox['paebm'].length;
-        const status = cardPaebm.querySelector('.projeto-status');
-        if (status) {
-            status.textContent = `${total} registros no Box`;
-        }
-    }
     
     // Atualizar status do Inventário
     if (cardInventario) {
