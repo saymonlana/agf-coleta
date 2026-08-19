@@ -603,15 +603,9 @@ function mostrarProjetosDoCliente(clienteId) {
     
     // Lista de projetos por cliente (configuravel)
     const projetosPorCliente = {
-        'vale': [
-            { id: 'vale_projeto1', nome: 'Projeto Vale 1', descricao: 'Em configuracao' }
-        ],
-        'samarco': [
-            { id: 'samarco_projeto1', nome: 'Projeto Samarco 1', descricao: 'Em configuracao' }
-        ],
-        'gerdau': [
-            { id: 'gerdau_projeto1', nome: 'Projeto Gerdau 1', descricao: 'Em configuracao' }
-        ],
+        'vale': [],
+        'samarco': [],
+        'gerdau': [],
         'anglo': [
             { id: 'anglo_projeto1', nome: 'Projeto Anglo 1', descricao: 'Em configuracao' }
         ]
