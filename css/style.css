@@ -279,6 +279,11 @@ html, body {
 }
 
 .header-info {
+    flex: 1;
+    text-align: center;
+}
+
+.header-info-center {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
