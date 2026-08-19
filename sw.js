@@ -3,7 +3,7 @@
    Funciona offline após primeiro acesso
    ============================================ */
 
-const CACHE_NAME = 'agf-coleta-v50';
+const CACHE_NAME = 'agf-coleta-v52';
 const urlsToCache = [
     './',
     './index.html',
@@ -78,43 +78,55 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
     
-    // Nao interceptar chamadas API
     if (url.pathname === '/proxy/box' || url.pathname === '/upload-excel' || url.pathname === '/generate-excel' || url.hostname !== location.hostname) {
         return;
     }
     
-    console.log('🌐 Buscando:', event.request.url);
+    const isLocalFile = url.hostname === location.hostname && (
+        url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || 
+        url.pathname.endsWith('.css') || url.pathname === '/' || url.pathname === './'
+    );
+    
+    if (isLocalFile) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    if (response && response.status === 200) {
+                        const responseToCache = response.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    return caches.match(event.request);
+                })
+        );
+        return;
+    }
     
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                // Retornar do cache se disponível
                 if (response) {
-                    console.log('📦 Retornando do cache:', event.request.url);
                     return response;
                 }
                 
-                // Buscar da rede
                 return fetch(event.request)
                     .then((response) => {
-                        // Verificar se é válida
                         if (!response || response.status !== 200 || response.type !== 'basic') {
                             return response;
                         }
                         
-                        // Clonar a resposta
                         const responseToCache = response.clone();
-                        
-                        // Adicionar ao cache
-                        caches.open(CACHE_NAME)
-                            .then((cache) => {
-                                cache.put(event.request, responseToCache);
-                            });
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
                         
                         return response;
                     })
                     .catch(() => {
-                        // Se falhar e for página, retornar index.html
                         if (event.request.destination === 'document') {
                             return caches.match('./index.html');
                         }
