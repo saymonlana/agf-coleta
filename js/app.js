@@ -287,22 +287,6 @@ async function carregarInventarioDoBox() {
 // ============================================
 
 function atualizarListaProjetos() {
-    const container = document.getElementById('lista-projetos');
-    const cardInventario = container.querySelector('[data-projeto="inventario"]');
-    
-    // Atualizar status do Inventário
-    if (cardInventario) {
-        const dadosLocais = App.dadosLocais['inventario'] || [];
-        const novos = dadosLocais.filter(d => d.status === 'novo').length;
-        const status = cardInventario.querySelector('.projeto-status');
-        if (status) {
-            if (novos > 0) {
-                status.textContent = `${novos} coletados (pendentes)`;
-            } else {
-                status.textContent = 'Nenhum registro coletado';
-            }
-        }
-    }
 }
 
 // ============================================
