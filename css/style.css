@@ -283,6 +283,14 @@ html, body {
     text-align: center;
 }
 
+#header-info-cliente {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    pointer-events: none;
+}
+
 .header-info h1 {
     font-size: 18px;
     font-weight: 600;
