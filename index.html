@@ -137,6 +137,67 @@
         </div>
     </div>
 
+    <!-- ========== TELA DE SELECAO DE CLIENTE ========== -->
+    <div id="tela-cliente" class="tela">
+        <header class="header">
+            <button id="btn-voltar-projetos" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="titulo-cliente">Selecionar Cliente</h1>
+                <span id="subtitulo-cliente">Escolha o cliente deste trabalho</span>
+            </div>
+        </header>
+
+        <div class="lista-projetos" id="lista-clientes">
+            <div class="projeto-card" data-cliente="vale">
+                <div class="projeto-icone">⛏️</div>
+                <div class="projeto-info">
+                    <h3>Vale</h3>
+                    <p>Projetos Vale</p>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+
+            <div class="projeto-card" data-cliente="samarco">
+                <div class="projeto-icone">🏭</div>
+                <div class="projeto-info">
+                    <h3>Samarco</h3>
+                    <p>Projetos Samarco</p>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+
+            <div class="projeto-card" data-cliente="gerdau">
+                <div class="projeto-icone">🔧</div>
+                <div class="projeto-info">
+                    <h3>Gerdau</h3>
+                    <p>Projetos Gerdau</p>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+
+            <div class="projeto-card" data-cliente="anglo">
+                <div class="projeto-icone">🏔️</div>
+                <div class="projeto-info">
+                    <h3>Anglo American</h3>
+                    <p>Projetos Anglo</p>
+                </div>
+                <div class="projeto-seta">›</div>
+            </div>
+        </div>
+
+        <!-- Lista de projetos do cliente selecionado -->
+        <div id="lista-projetos-cliente" style="display: none;">
+            <div class="lista-projetos" id="projetos-do-cliente">
+                <!-- Projetos sao preenchidos dinamicamente -->
+            </div>
+        </div>
+    </div>
+
     <!-- ========== TELA DO MAPA ========== -->
     <div id="tela-mapa" class="tela">
         <header class="header-mapa">

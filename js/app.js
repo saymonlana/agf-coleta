@@ -46,6 +46,8 @@ function inicializarApp() {
     if (usuarioSalvo) {
         App.usuario = JSON.parse(usuarioSalvo);
         mostrarTela('tela-projetos');
+    } else {
+        history.replaceState({ tela: 'tela-login' }, '', '');
     }
     
     // Carregar dados locais e fila
@@ -331,7 +333,7 @@ function configurarEventListeners() {
         card.addEventListener('click', () => {
             const projeto = card.dataset.projeto;
             if (projeto === 'paebm' || projeto === 'inventario') {
-                abrirProjeto(projeto);
+                abrirTelaCliente(projeto);
             } else {
                 mostrarToast('Projeto em configuracao', 'aviso');
             }
@@ -340,6 +342,21 @@ function configurarEventListeners() {
     
     // Botao voltar (mapa -> projetos)
     try { document.getElementById('btn-voltar').addEventListener('click', () => { mostrarTela('tela-projetos'); }); } catch(e) {}
+    
+    // Botao voltar (cliente -> projetos)
+    try { document.getElementById('btn-voltar-projetos').addEventListener('click', () => { 
+        document.getElementById('lista-clientes').style.display = 'block';
+        document.getElementById('lista-projetos-cliente').style.display = 'none';
+        mostrarTela('tela-projetos'); 
+    }); } catch(e) {}
+    
+    // Clientes
+    document.querySelectorAll('.projeto-card[data-cliente]').forEach(card => {
+        card.addEventListener('click', () => {
+            const cliente = card.dataset.cliente;
+            mostrarProjetosDoCliente(cliente);
+        });
+    });
     
     // Botao coletar
     try { document.getElementById('btn-coletar').addEventListener('click', () => { abrirFormularioColeta(); }); } catch(e) {}
@@ -511,11 +528,17 @@ function handleLogout() {
 // NAVEGACAO ENTRE TELAS
 // ============================================
 
-function mostrarTela(telaId) {
+let telaAnterior = null;
+
+function mostrarTela(telaId, pushHistory) {
     document.querySelectorAll('.tela').forEach(tela => {
         tela.classList.remove('ativa');
     });
     document.getElementById(telaId).classList.add('ativa');
+    
+    if (pushHistory !== false) {
+        history.pushState({ tela: telaId }, '', '');
+    }
     
     if (telaId === 'tela-mapa') {
         setTimeout(() => {
@@ -524,6 +547,109 @@ function mostrarTela(telaId) {
             }
         }, 200);
     }
+}
+
+window.addEventListener('popstate', function(e) {
+    const telaAtiva = document.querySelector('.tela.ativa');
+    const telaAtual = telaAtiva ? telaAtiva.id : 'tela-login';
+    
+    let telaVoltar = 'tela-login';
+    
+    if (telaAtual === 'tela-mapa') {
+        telaVoltar = 'tela-cliente';
+    } else if (telaAtual === 'tela-cliente') {
+        telaVoltar = 'tela-projetos';
+        document.getElementById('lista-clientes').style.display = 'block';
+        document.getElementById('lista-projetos-cliente').style.display = 'none';
+    } else if (telaAtual === 'tela-projetos') {
+        telaVoltar = 'tela-login';
+    } else if (telaAtual === 'tela-coleta') {
+        telaVoltar = 'tela-mapa';
+    }
+    
+    mostrarTela(telaVoltar, false);
+});
+
+// ============================================
+// TELA DE CLIENTES
+// ============================================
+
+function abrirTelaCliente(projetoId) {
+    App.projetoAtual = projetoId;
+    
+    const projeto = App.projetos.find(p => p.id === projetoId);
+    const nomeProjeto = projeto ? projeto.nome : 'Projeto';
+    
+    document.getElementById('titulo-cliente').textContent = `Selecionar Cliente`;
+    document.getElementById('subtitulo-cliente').textContent = `${nomeProjeto} - Escolha o cliente`;
+    
+    // Resetar para mostrar lista de clientes
+    document.getElementById('lista-clientes').style.display = 'block';
+    document.getElementById('lista-projetos-cliente').style.display = 'none';
+    
+    mostrarTela('tela-cliente');
+}
+
+function mostrarProjetosDoCliente(clienteId) {
+    App.clienteAtual = clienteId;
+    
+    // Esconder lista de clientes e mostrar projetos
+    document.getElementById('lista-clientes').style.display = 'none';
+    document.getElementById('lista-projetos-cliente').style.display = 'block';
+    
+    const container = document.getElementById('projetos-do-cliente');
+    container.innerHTML = '';
+    
+    const nomesClientes = {
+        'vale': 'Vale',
+        'samarco': 'Samarco',
+        'gerdau': 'Gerdau',
+        'anglo': 'Anglo American'
+    };
+    
+    document.getElementById('titulo-cliente').textContent = nomesClientes[clienteId] || clienteId;
+    document.getElementById('subtitulo-cliente').textContent = 'Escolha o projeto';
+    
+    // Lista de projetos por cliente (configuravel)
+    const projetosPorCliente = {
+        'vale': [
+            { id: 'vale_projeto1', nome: 'Projeto Vale 1', descricao: 'Em configuracao' }
+        ],
+        'samarco': [
+            { id: 'samarco_projeto1', nome: 'Projeto Samarco 1', descricao: 'Em configuracao' }
+        ],
+        'gerdau': [
+            { id: 'gerdau_projeto1', nome: 'Projeto Gerdau 1', descricao: 'Em configuracao' }
+        ],
+        'anglo': [
+            { id: 'anglo_projeto1', nome: 'Projeto Anglo 1', descricao: 'Em configuracao' }
+        ]
+    };
+    
+    const projetos = projetosPorCliente[clienteId] || [];
+    
+    if (projetos.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 40px; color: #999;">Nenhum projeto configurado para este cliente</p>';
+        return;
+    }
+    
+    projetos.forEach(proj => {
+        const card = document.createElement('div');
+        card.className = 'projeto-card';
+        card.dataset.projetoCliente = proj.id;
+        card.innerHTML = `
+            <div class="projeto-icone">📋</div>
+            <div class="projeto-info">
+                <h3>${proj.nome}</h3>
+                <p>${proj.descricao}</p>
+            </div>
+            <div class="projeto-seta">›</div>
+        `;
+        card.addEventListener('click', () => {
+            abrirProjeto(App.projetoAtual);
+        });
+        container.appendChild(card);
+    });
 }
 
 // ============================================
