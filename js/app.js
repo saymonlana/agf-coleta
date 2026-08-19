@@ -340,18 +340,14 @@ function configurarEventListeners() {
         });
     });
     
-    // Botao voltar (mapa -> clientes)
+    // Botao voltar (mapa -> projetos do cliente)
     try { document.getElementById('btn-voltar').addEventListener('click', () => { 
-        document.getElementById('lista-clientes').style.display = 'block';
-        document.getElementById('lista-projetos-cliente').style.display = 'none';
-        mostrarTela('tela-cliente'); 
+        history.back();
     }); } catch(e) {}
     
     // Botao voltar (cliente -> projetos)
     try { document.getElementById('btn-voltar-projetos').addEventListener('click', () => { 
-        document.getElementById('lista-clientes').style.display = 'block';
-        document.getElementById('lista-projetos-cliente').style.display = 'none';
-        mostrarTela('tela-projetos'); 
+        history.back();
     }); } catch(e) {}
     
     // Clientes
@@ -532,8 +528,6 @@ function handleLogout() {
 // NAVEGACAO ENTRE TELAS
 // ============================================
 
-let telaAnterior = null;
-
 function mostrarTela(telaId, pushHistory) {
     document.querySelectorAll('.tela').forEach(tela => {
         tela.classList.remove('ativa');
@@ -553,30 +547,50 @@ function mostrarTela(telaId, pushHistory) {
     }
 }
 
+function voltarTelaCliente() {
+    document.getElementById('lista-clientes').style.display = 'block';
+    document.getElementById('lista-projetos-cliente').style.display = 'none';
+}
+
 window.addEventListener('popstate', function(e) {
+    const state = e.state;
+    if (!state || !state.tela) return;
+    
     const telaAtiva = document.querySelector('.tela.ativa');
-    const telaAtual = telaAtiva ? telaAtiva.id : 'tela-login';
+    const telaAtual = telaAtiva ? telaAtiva.id : '';
     
-    let telaVoltar = 'tela-login';
-    
-    if (telaAtual === 'tela-mapa') {
-        telaVoltar = 'tela-cliente';
-        document.getElementById('lista-clientes').style.display = 'block';
-        document.getElementById('lista-projetos-cliente').style.display = 'none';
-    } else if (telaAtual === 'tela-cliente' && document.getElementById('lista-projetos-cliente').style.display === 'block') {
-        // Está na lista de projetos do cliente, volta para lista de clientes
-        document.getElementById('lista-clientes').style.display = 'block';
-        document.getElementById('lista-projetos-cliente').style.display = 'none';
+    if (state.tela === telaAtual) {
+        // Mesma tela, mas pode mudar o sub-view
+        if (state.tela === 'tela-cliente') {
+            if (state.sub === 'projetos') {
+                document.getElementById('lista-clientes').style.display = 'none';
+                document.getElementById('lista-projetos-cliente').style.display = 'block';
+            } else {
+                document.getElementById('lista-clientes').style.display = 'block';
+                document.getElementById('lista-projetos-cliente').style.display = 'none';
+            }
+        }
         return;
-    } else if (telaAtual === 'tela-cliente') {
-        telaVoltar = 'tela-projetos';
-    } else if (telaAtual === 'tela-projetos') {
-        telaVoltar = 'tela-login';
-    } else if (telaAtual === 'tela-coleta') {
-        telaVoltar = 'tela-mapa';
     }
     
-    mostrarTela(telaVoltar, false);
+    // Mudar de tela
+    document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
+    document.getElementById(state.tela).classList.add('ativa');
+    
+    // Resetar sub-views
+    if (state.tela === 'tela-cliente') {
+        if (state.sub === 'projetos') {
+            document.getElementById('lista-clientes').style.display = 'none';
+            document.getElementById('lista-projetos-cliente').style.display = 'block';
+        } else {
+            document.getElementById('lista-clientes').style.display = 'block';
+            document.getElementById('lista-projetos-cliente').style.display = 'none';
+        }
+    }
+    
+    if (state.tela === 'tela-mapa') {
+        setTimeout(() => { if (mapa) mapa.invalidateSize(); }, 200);
+    }
 });
 
 // ============================================
@@ -592,21 +606,17 @@ function abrirTelaCliente(projetoId) {
     document.getElementById('titulo-cliente').textContent = `Selecionar Cliente`;
     document.getElementById('subtitulo-cliente').textContent = `${nomeProjeto} - Escolha o cliente`;
     
-    // Resetar para mostrar lista de clientes
-    document.getElementById('lista-clientes').style.display = 'block';
-    document.getElementById('lista-projetos-cliente').style.display = 'none';
-    
+    voltarTelaCliente();
     mostrarTela('tela-cliente');
 }
 
 function mostrarProjetosDoCliente(clienteId) {
     App.clienteAtual = clienteId;
     
-    // Esconder lista de clientes e mostrar projetos
     document.getElementById('lista-clientes').style.display = 'none';
     document.getElementById('lista-projetos-cliente').style.display = 'block';
     
-    history.pushState({ tela: 'tela-projetos-cliente' }, '', '');
+    history.pushState({ tela: 'tela-cliente', sub: 'projetos' }, '', '');
     
     const container = document.getElementById('projetos-do-cliente');
     container.innerHTML = '';
