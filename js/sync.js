@@ -407,6 +407,12 @@ async function sincronizarDados() {
         return await sincronizarInventario();
     }
     
+    // Para o CMD, usar sincronização específica
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    if (isCmd) {
+        return await sincronizarCmd();
+    }
+    
     const modal = document.getElementById('modal-sync');
     const titulo = document.getElementById('sync-titulo');
     const status = document.getElementById('sync-status');
@@ -742,6 +748,16 @@ const InventarioSync = {
     file_ids: {},
     kml_file_ids: {},
     excel_file_id: localStorage.getItem('agf_excel_file_id') || null
+};
+
+// ============================================
+// PAEBM CMD - SINCRONIZACAO COM BOX
+// ============================================
+
+const CmdSync = {
+    folder_id: '413710880404',
+    excel_file_id: null,
+    kml_file_id: null
 };
 
 async function listarGeoJSONInventario() {
@@ -1181,6 +1197,18 @@ function geojsonParaKml(geojson, nomeCamada) {
     kml += `    </IconStyle>\n`;
     kml += `  </Style>\n`;
     
+    kml += `  <Style id="parcela">\n`;
+    kml += `    <IconStyle>\n`;
+    kml += `      <color>ff00ff00</color>\n`;
+    kml += `      <scale>1.4</scale>\n`;
+    kml += `      <Icon>\n`;
+    kml += `        <href>http://maps.google.com/mapfiles/kml/shapes/placemark_square.png</href>\n`;
+    kml += `      </Icon>\n`;
+    kml += `    </IconStyle>\n`;
+    kml += `  </Style>\n`;
+    
+    let idContador = 1;
+    
     (geojson.features || []).forEach(feature => {
         const props = feature.properties || {};
         const coords = feature.geometry ? feature.geometry.coordinates : null;
@@ -1190,94 +1218,235 @@ function geojsonParaKml(geojson, nomeCamada) {
         const lat = coords[1];
         const alt = coords[2] || 0;
         
-        const numero = props.NUMERO || '';
-        const nomeVulgar = props.NOME_VULGAR || props.NOME_COMUM || '';
-        const nomeCientifico = props.NOME_CIENTIFICO || '';
-        const familia = props.FAMILIA || '';
-        const fustes = props.fustes || [];
-        const tecnico = props._tecnico || '';
-        const data = props._data_coleta || '';
-        
-        const nomeIndividuo = numero ? `N ${numero}` : (props.NOME || '');
-        
-        if (fustes.length > 0) {
-            kml += `  <Folder>\n`;
-            kml += `    <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)} (${fustes.length} fustes)</name>\n`;
-            kml += `    <open>1</open>\n`;
+        // Verificar se é parcela
+        if (props.tipo === 'parcela') {
+            kml = gerarKmlParcela(kml, props, lon, lat, alt, idContador);
+        } else {
+            // Feature individual (legado)
+            const numero = props.NUMERO || '';
+            const nomeVulgar = props.NOME_VULGAR || props.NOME_COMUM || '';
+            const nomeCientifico = props.NOME_CIENTIFICO || '';
+            const familia = props.FAMILIA || '';
+            const fustes = props.fustes || [];
+            const tecnico = props._tecnico || '';
+            const data = props._data_coleta || '';
+            const idAtual = idContador;
             
-            fustes.forEach(fuste => {
-                const fusteNum = fuste.numero || 1;
-                const fusteTotal = fuste.de || fustes.length;
+            const nomeIndividuo = numero ? `N ${numero}` : (props.NOME || '');
+            
+            if (fustes.length > 0) {
+                kml += `  <Folder>\n`;
+                kml += `    <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)} (${fustes.length} fustes)</name>\n`;
+                kml += `    <open>1</open>\n`;
                 
-                kml += `    <Placemark>\n`;
-                kml += `      <name>Fuste ${fusteNum} - ${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
+                fustes.forEach(fuste => {
+                    const fusteNum = fuste.numero || 1;
+                    const fusteTotal = fuste.de || fustes.length;
+                    
+                    kml += `    <Placemark>\n`;
+                    kml += `      <name>Fuste ${fusteNum} - ${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
+                    
+                    let desc = '<h3>Fuste ' + fusteNum + ' - ' + escapeXml(nomeIndividuo) + ' - ' + escapeXml(nomeVulgar) + '</h3>';
+                    desc += '<table border="1" cellpadding="4">';
+                    desc += '<tr><td><b>ID</b></td><td>' + idAtual + '</td></tr>';
+                    desc += '<tr><td><b>Indivíduo (N)</b></td><td>' + escapeXml(String(numero)) + '</td></tr>';
+                    desc += '<tr><td><b>Fuste</b></td><td>' + fusteNum + ' de ' + fusteTotal + '</td></tr>';
+                    if (nomeCientifico) desc += '<tr><td><b>Nome Científico</b></td><td><i>' + escapeXml(nomeCientifico) + '</i></td></tr>';
+                    if (nomeVulgar) desc += '<tr><td><b>Nome Comum</b></td><td>' + escapeXml(nomeVulgar) + '</td></tr>';
+                    if (familia) desc += '<tr><td><b>Família</b></td><td>' + escapeXml(familia) + '</td></tr>';
+                    if (fuste.ALTURA) desc += '<tr><td><b>Altura (m)</b></td><td>' + escapeXml(fuste.ALTURA) + '</td></tr>';
+                    if (fuste.CAP) desc += '<tr><td><b>CAP (cm)</b></td><td>' + escapeXml(fuste.CAP) + '</td></tr>';
+                    if (fuste.COPA_D1) desc += '<tr><td><b>Copa D1 (m)</b></td><td>' + escapeXml(fuste.COPA_D1) + '</td></tr>';
+                    if (fuste.COPA_D2) desc += '<tr><td><b>Copa D2 (m)</b></td><td>' + escapeXml(fuste.COPA_D2) + '</td></tr>';
+                    
+                    Object.keys(props).forEach(key => {
+                        if (key.startsWith('_') || key === 'fustes' || key === 'NUMERO' || 
+                            key === 'NOME_VULGAR' || key === 'NOME_COMUM' || key === 'NOME_CIENTIFICO' || 
+                            key === 'FAMILIA' || key === 'FUSTE' || key === 'ALTURA' || key === 'CAP' || 
+                            key === 'COPA_D1' || key === 'COPA_D2') return;
+                        const valor = props[key];
+                        if (valor !== undefined && valor !== null && valor !== '') {
+                            desc += '<tr><td><b>' + escapeXml(key) + '</b></td><td>' + escapeXml(String(valor)) + '</td></tr>';
+                        }
+                    });
+                    
+                    if (tecnico) desc += '<tr><td><b>Responsável</b></td><td>' + escapeXml(tecnico) + '</td></tr>';
+                    if (data) desc += '<tr><td><b>Data</b></td><td>' + escapeXml(data) + '</td></tr>';
+                    desc += '</table><br/>Coordenadas: ' + lat + ', ' + lon;
+                    
+                    kml += `      <description><![CDATA[${desc}]]></description>\n`;
+                    kml += `      <styleUrl>#multi_fuste</styleUrl>\n`;
+                    kml += `      <Point>\n`;
+                    kml += `        <coordinates>${lon},${lat},${alt}</coordinates>\n`;
+                    kml += `      </Point>\n`;
+                    kml += `    </Placemark>\n`;
+                });
                 
-                let desc = '<h3>Fuste ' + fusteNum + ' - ' + escapeXml(nomeIndividuo) + ' - ' + escapeXml(nomeVulgar) + '</h3>';
-                desc += '<table border="1" cellpadding="4">';
-                desc += '<tr><td><b>Indivíduo (N)</b></td><td>' + escapeXml(String(numero)) + '</td></tr>';
-                desc += '<tr><td><b>Fuste</b></td><td>' + fusteNum + ' de ' + fusteTotal + '</td></tr>';
-                if (nomeCientifico) desc += '<tr><td><b>Nome Científico</b></td><td><i>' + escapeXml(nomeCientifico) + '</i></td></tr>';
-                if (nomeVulgar) desc += '<tr><td><b>Nome Comum</b></td><td>' + escapeXml(nomeVulgar) + '</td></tr>';
-                if (familia) desc += '<tr><td><b>Família</b></td><td>' + escapeXml(familia) + '</td></tr>';
-                if (fuste.ALTURA) desc += '<tr><td><b>Altura (m)</b></td><td>' + escapeXml(fuste.ALTURA) + '</td></tr>';
-                if (fuste.CAP) desc += '<tr><td><b>CAP (cm)</b></td><td>' + escapeXml(fuste.CAP) + '</td></tr>';
-                if (fuste.COPA_D1) desc += '<tr><td><b>Copa D1 (m)</b></td><td>' + escapeXml(fuste.COPA_D1) + '</td></tr>';
-                if (fuste.COPA_D2) desc += '<tr><td><b>Copa D2 (m)</b></td><td>' + escapeXml(fuste.COPA_D2) + '</td></tr>';
+                kml += `  </Folder>\n`;
+            } else {
+                kml += '  <Placemark>\n';
+                if (nomeIndividuo) {
+                    kml += `    <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
+                }
                 
+                let desc = '<table border="1" cellpadding="4">';
+                desc += '<tr><td><b>ID</b></td><td>' + idAtual + '</td></tr>';
                 Object.keys(props).forEach(key => {
-                    if (key.startsWith('_') || key === 'fustes' || key === 'NUMERO' || 
-                        key === 'NOME_VULGAR' || key === 'NOME_COMUM' || key === 'NOME_CIENTIFICO' || 
-                        key === 'FAMILIA' || key === 'FUSTE' || key === 'ALTURA' || key === 'CAP' || 
-                        key === 'COPA_D1' || key === 'COPA_D2') return;
+                    if (key.startsWith('_')) return;
                     const valor = props[key];
                     if (valor !== undefined && valor !== null && valor !== '') {
                         desc += '<tr><td><b>' + escapeXml(key) + '</b></td><td>' + escapeXml(String(valor)) + '</td></tr>';
                     }
                 });
-                
                 if (tecnico) desc += '<tr><td><b>Responsável</b></td><td>' + escapeXml(tecnico) + '</td></tr>';
                 if (data) desc += '<tr><td><b>Data</b></td><td>' + escapeXml(data) + '</td></tr>';
                 desc += '</table><br/>Coordenadas: ' + lat + ', ' + lon;
                 
-                kml += `      <description><![CDATA[${desc}]]></description>\n`;
-                kml += `      <styleUrl>#multi_fuste</styleUrl>\n`;
-                kml += `      <Point>\n`;
-                kml += `        <coordinates>${lon},${lat},${alt}</coordinates>\n`;
-                kml += `      </Point>\n`;
-                kml += `    </Placemark>\n`;
-            });
-            
-            kml += `  </Folder>\n`;
-        } else {
-            kml += '  <Placemark>\n';
-            if (nomeIndividuo) {
-                kml += `    <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
-            }
-            
-            let desc = '';
-            Object.keys(props).forEach(key => {
-                if (key.startsWith('_')) return;
-                const valor = props[key];
-                if (valor !== undefined && valor !== null && valor !== '') {
-                    desc += `${key}: ${escapeXml(String(valor))}\\n`;
+                if (desc) {
+                    kml += `    <description><![CDATA[${desc}]]></description>\n`;
                 }
-            });
-            if (tecnico) desc += `Tecnico: ${escapeXml(tecnico)}\\n`;
-            if (data) desc += `Data: ${escapeXml(data)}`;
-            
-            if (desc) {
-                kml += `    <description><![CDATA[${desc.replace(/\\n/g, '<br/>')}]]></description>\n`;
+                
+                kml += '    <Point>\n';
+                kml += `      <coordinates>${lon},${lat},${alt}</coordinates>\n`;
+                kml += '    </Point>\n';
+                kml += '  </Placemark>\n';
             }
-            
-            kml += '    <Point>\n';
-            kml += `      <coordinates>${lon},${lat},${alt}</coordinates>\n`;
-            kml += '    </Point>\n';
-            kml += '  </Placemark>\n';
         }
+        
+        idContador++;
     });
     
     kml += '</Document>\n';
     kml += '</kml>';
+    
+    return kml;
+}
+
+// ============================================
+// GERAR KML PARA PARCELA
+// ============================================
+
+function gerarKmlParcela(kml, props, lon, lat, alt, idParcela) {
+    const nome = props.nome || 'Parcela';
+    const fisionomia = props.fisionomia || '';
+    const responsavel = props.responsavel || props.tecnico || '';
+    const dataColeta = props.dataColeta || props.data_coleta || '';
+    
+    kml += `  <Folder>\n`;
+    kml += `    <name>${escapeXml(nome)} - ${escapeXml(fisionomia)}</name>\n`;
+    kml += `    <open>1</open>\n`;
+    
+    // Placemark da parcela
+    kml += `    <Placemark>\n`;
+    kml += `      <name>${escapeXml(nome)}</name>\n`;
+    let descParcela = '<h3>' + escapeXml(nome) + '</h3>';
+    descParcela += '<table border="1" cellpadding="4">';
+    descParcela += '<tr><td><b>ID</b></td><td>' + idParcela + '</td></tr>';
+    descParcela += '<tr><td><b>Fisionomia</b></td><td>' + escapeXml(fisionomia) + '</td></tr>';
+    if (responsavel) descParcela += '<tr><td><b>Responsável</b></td><td>' + escapeXml(responsavel) + '</td></tr>';
+    if (dataColeta) descParcela += '<tr><td><b>Data Coleta</b></td><td>' + escapeXml(dataColeta) + '</td></tr>';
+    
+    // Resumo dos estratos
+    const arvoreo = (props.arvoreo || []).length;
+    const arbustivo = (props.arbustivo || []).length;
+    const herbaceo = (props.herbaceo || []).length;
+    descParcela += '<tr><td><b>Arbóreo</b></td><td>' + arvoreo + ' indivíduos</td></tr>';
+    descParcela += '<tr><td><b>Arbustivo</b></td><td>' + arbustivo + ' indivíduos</td></tr>';
+    descParcela += '<tr><td><b>Herbáceo</b></td><td>' + herbaceo + ' indivíduos</td></tr>';
+    descParcela += '</table><br/>Coordenadas: ' + lat + ', ' + lon;
+    
+    kml += `      <description><![CDATA[${descParcela}]]></description>\n`;
+    kml += `      <styleUrl>#parcela</styleUrl>\n`;
+    kml += `      <Point>\n`;
+    kml += `        <coordinates>${lon},${lat},${alt}</coordinates>\n`;
+    kml += `      </Point>\n`;
+    kml += `    </Placemark>\n`;
+    
+    // Folder Arbóreo
+    if (props.arvoreo && props.arvoreo.length > 0) {
+        kml += `    <Folder>\n`;
+        kml += `      <name>Arbóreo (${props.arvoreo.length})</name>\n`;
+        let idInd = 1;
+        props.arvoreo.forEach(ind => {
+            kml = adicionarIndividuoKml(kml, ind, idInd, 'Arbóreo');
+            idInd++;
+        });
+        kml += `    </Folder>\n`;
+    }
+    
+    // Folder Arbustivo
+    if (props.arbustivo && props.arbustivo.length > 0) {
+        kml += `    <Folder>\n`;
+        kml += `      <name>Arbustivo (${props.arbustivo.length})</name>\n`;
+        let idInd = 1;
+        props.arbustivo.forEach(ind => {
+            kml = adicionarIndividuoKml(kml, ind, idInd, 'Arbustivo');
+            idInd++;
+        });
+        kml += `    </Folder>\n`;
+    }
+    
+    // Folder Herbáceo
+    if (props.herbaceo && props.herbaceo.length > 0) {
+        kml += `    <Folder>\n`;
+        kml += `      <name>Herbáceo (${props.herbaceo.length})</name>\n`;
+        let idInd = 1;
+        props.herbaceo.forEach(ind => {
+            kml = adicionarIndividuoKml(kml, ind, idInd, 'Herbáceo');
+            idInd++;
+        });
+        kml += `    </Folder>\n`;
+    }
+    
+    kml += `  </Folder>\n`;
+    
+    return kml;
+}
+
+function adicionarIndividuoKml(kml, ind, idInd, estrato) {
+    const numero = ind.NUMERO || idInd;
+    const nomeVulgar = ind.NOME_VULGAR || ind.NOME_COMUM || '';
+    const nomeCientifico = ind.NOME_CIENTIFICO || '';
+    const familia = ind.FAMILIA || '';
+    const fustes = ind.fustes || [];
+    
+    const nomeIndividuo = numero ? `N ${numero}` : (ind.NOME || '');
+    
+    kml += `      <Placemark>\n`;
+    kml += `        <name>${escapeXml(nomeIndividuo)} - ${escapeXml(nomeVulgar)}</name>\n`;
+    
+    let desc = '<h3>' + escapeXml(nomeIndividuo) + ' - ' + escapeXml(nomeVulgar) + '</h3>';
+    desc += '<table border="1" cellpadding="4">';
+    desc += '<tr><td><b>Estrato</b></td><td>' + estrato + '</td></tr>';
+    desc += '<tr><td><b>Nº</b></td><td>' + numero + '</td></tr>';
+    if (nomeCientifico) desc += '<tr><td><b>Nome Científico</b></td><td><i>' + escapeXml(nomeCientifico) + '</i></td></tr>';
+    if (nomeVulgar) desc += '<tr><td><b>Nome Comum</b></td><td>' + escapeXml(nomeVulgar) + '</td></tr>';
+    if (familia) desc += '<tr><td><b>Família</b></td><td>' + escapeXml(familia) + '</td></tr>';
+    
+    if (fustes.length > 0) {
+        fustes.forEach(fuste => {
+            desc += '<tr><td><b>Fuste ' + (fuste.numero || 1) + '</b></td><td>';
+            if (fuste.ALTURA) desc += 'Alt: ' + fuste.ALTURA + 'm ';
+            if (fuste.CAP) desc += 'CAP: ' + fuste.CAP + 'cm ';
+            if (fuste.COPA_D1) desc += 'D1: ' + fuste.COPA_D1 + 'm ';
+            if (fuste.COPA_D2) desc += 'D2: ' + fuste.COPA_D2 + 'm ';
+            desc += '</td></tr>';
+        });
+    } else {
+        if (ind.ALTURA) desc += '<tr><td><b>Altura (m)</b></td><td>' + escapeXml(ind.ALTURA) + '</td></tr>';
+        if (ind.CAP) desc += '<tr><td><b>CAP (cm)</b></td><td>' + escapeXml(ind.CAP) + '</td></tr>';
+        if (ind.COPA_D1) desc += '<tr><td><b>Copa D1 (m)</b></td><td>' + escapeXml(ind.COPA_D1) + '</td></tr>';
+        if (ind.COPA_D2) desc += '<tr><td><b>Copa D2 (m)</b></td><td>' + escapeXml(ind.COPA_D2) + '</td></tr>';
+    }
+    
+    if (ind.NUM_INDIVIDUOS) desc += '<tr><td><b>Nº Indivíduos</b></td><td>' + ind.NUM_INDIVIDUOS + '</td></tr>';
+    if (ind.PERCENTUAL_COBERTURA) desc += '<tr><td><b>% Cobertura</b></td><td>' + ind.PERCENTUAL_COBERTURA + '%</td></tr>';
+    
+    desc += '</table>';
+    
+    kml += `        <description><![CDATA[${desc}]]></description>\n`;
+    kml += `        <styleUrl>#multi_fuste</styleUrl>\n`;
+    kml += `      </Placemark>\n`;
     
     return kml;
 }
@@ -1361,6 +1530,254 @@ async function listarKmlsInventario() {
     } catch (e) {
         console.error('Erro ao listar KMLs:', e);
         return [];
+    }
+}
+
+// ============================================
+// PAEBM CMD - SINCRONIZACAO
+// ============================================
+
+const CAMPOS_CMD = [
+    'PONTO', 'ENDERECO_REGISTRO', 'BAIRRO', 'MUNICIPIO',
+    'E_UTC', 'N_UTC', 'LATITUDE', 'LONGITUDE',
+    'NOME_CIENTIFICO', 'NOME_POPULAR', 'SEXO', 'QUANTIDADE',
+    'OBSERVACAO', 'DATA_REGISTRO', 'HORA_REGISTRO', 'BARRAGEM'
+];
+
+const LABELS_CMD = [
+    'Ponto', 'Endereco de Registro', 'Bairro', 'Municipio',
+    'E (m)', 'N (m)', 'Latitude', 'Longitude',
+    'Nome Cientifico', 'Nome Popular', 'Sexo', 'Quantidade (Individuos)',
+    'Observacao', 'Data Registro', 'Hora do Registro', 'Barragem'
+];
+
+async function sincronizarCmd() {
+    const modal = document.getElementById('modal-sync');
+    const titulo = document.getElementById('sync-titulo');
+    const status = document.getElementById('sync-status');
+    const progress = document.getElementById('sync-progress');
+    const btnFechar = document.getElementById('btn-fechar-sync');
+    
+    modal.classList.add('ativo');
+    btnFechar.style.display = 'none';
+    progress.style.backgroundColor = '#27AE60';
+    
+    try {
+        titulo.textContent = 'Conectando ao Box...';
+        status.textContent = 'Verificando token...';
+        progress.style.width = '10%';
+        
+        if (!await testarConexaoBox()) {
+            throw new Error(Sync.erroToken || 'Token invalido ou expirado.');
+        }
+        
+        titulo.textContent = 'Preparando dados...';
+        status.textContent = 'Identificando dados novos...';
+        progress.style.width = '20%';
+        
+        const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
+        const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
+        
+        if (dadosNovos.length === 0) {
+            titulo.textContent = 'Nada para sincronizar';
+            status.textContent = 'Todos os dados ja foram enviados';
+            progress.style.width = '100%';
+            btnFechar.style.display = 'block';
+            return;
+        }
+        
+        titulo.textContent = 'Gerando planilha Excel...';
+        status.textContent = `Criando planilha com ${dadosNovos.length} pontos...`;
+        progress.style.width = '30%';
+        
+        await gerarESalvarExcelCmd(dadosNovos);
+        
+        titulo.textContent = 'Gerando KML...';
+        status.textContent = `Criando KML com ${dadosNovos.length} pontos...`;
+        progress.style.width = '60%';
+        
+        await gerarESalvarKmlCmd(dadosNovos);
+        
+        titulo.textContent = 'Finalizando...';
+        status.textContent = 'Atualizando status local...';
+        progress.style.width = '90%';
+        
+        const agora = new Date();
+        dadosNovos.forEach(dado => {
+            dado.status = 'sincronizado';
+            dado.syncEm = agora.toISOString();
+            if (typeof FilaSync !== 'undefined') {
+                FilaSync.marcarSincronizado(dado.id);
+            }
+        });
+        
+        salvarDadosLocais();
+        
+        titulo.textContent = 'Sincronizacao concluida!';
+        status.textContent = `${dadosNovos.length} pontos enviados + Excel + KML`;
+        progress.style.width = '100%';
+        btnFechar.style.display = 'block';
+        
+        atualizarContadorPontos();
+        carregarPontosNoMapa();
+        mostrarToast(`${dadosNovos.length} pontos sincronizados!`, 'sucesso');
+        
+    } catch (error) {
+        console.error('Erro na sincronizacao CMD:', error);
+        titulo.textContent = 'Erro na sincronizacao';
+        status.textContent = error.message;
+        progress.style.width = '100%';
+        progress.style.backgroundColor = '#E74C3C';
+        btnFechar.style.display = 'block';
+        mostrarToast('Erro ao sincronizar: ' + error.message, 'erro');
+    }
+}
+
+async function gerarESalvarExcelCmd(dadosNovos) {
+    if (typeof XLSX === 'undefined') {
+        console.warn('Biblioteca XLSX nao carregada, pulando Excel');
+        return;
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const rows = [];
+    
+    dadosNovos.forEach(dado => {
+        const row = {};
+        CAMPOS_CMD.forEach((campo, i) => {
+            row[LABELS_CMD[i]] = dado.campos[campo] || '';
+        });
+        row['Tecnico'] = dado.tecnico || '';
+        row['Data Coleta'] = dado.dataColeta ? new Date(dado.dataColeta).toLocaleDateString('pt-BR') : '';
+        row['Latitude Decimal'] = dado.latitude || '';
+        row['Longitude Decimal'] = dado.longitude || '';
+        rows.push(row);
+    });
+    
+    const headers = [...LABELS_CMD, 'Tecnico', 'Data Coleta', 'Latitude Decimal', 'Longitude Decimal'];
+    const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+    ws['!cols'] = headers.map(() => ({ wch: 22 }));
+    XLSX.utils.book_append_sheet(wb, ws, 'Fauna Errante');
+    
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    
+    const fileName = 'Questionario_FAUNA_ERRANTE_CMD.xlsx';
+    
+    const fileId = await buscarArquivoExistente(CmdSync.folder_id, fileName);
+    
+    const resp = await fetch(EXCEL_API_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'X-Token': Sync.access_token,
+            'X-Folder-Id': CmdSync.folder_id,
+            'X-File-Id': fileId || '',
+            'X-File-Name': fileName
+        },
+        body: new Uint8Array(wbout)
+    });
+    
+    const data = await resp.json();
+    if (resp.ok && data.entries) {
+        CmdSync.excel_file_id = data.entries[0].id;
+        console.log('Excel CMD salvo:', data.entries[0].name);
+    }
+}
+
+async function gerarESalvarKmlCmd(dadosNovos) {
+    let kml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+    kml += '<kml xmlns="http://www.opengis.net/kml/2.2">\n';
+    kml += '<Document>\n';
+    kml += '  <name>Questionario_FAUNA_ERRANTE_CMD</name>\n';
+    
+    kml += '  <Style id="fauna_errante">\n';
+    kml += '    <IconStyle>\n';
+    kml += '      <color>ff0000ff</color>\n';
+    kml += '      <scale>1.2</scale>\n';
+    kml += '      <Icon>\n';
+    kml += '        <href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href>\n';
+    kml += '      </Icon>\n';
+    kml += '    </IconStyle>\n';
+    kml += '  </Style>\n';
+    
+    dadosNovos.forEach(dado => {
+        const lat = dado.latitude;
+        const lon = dado.longitude;
+        if (!lat || !lon) return;
+        
+        const ponto = dado.campos.PONTO || '';
+        const nomePopular = dado.campos.NOME_POPULAR || '';
+        
+        kml += '  <Placemark>\n';
+        kml += `    <name>${escapeXml(ponto)} - ${escapeXml(nomePopular)}</name>\n`;
+        
+        let desc = '<table border="1" cellpadding="4">';
+        CAMPOS_CMD.forEach(campo => {
+            const valor = dado.campos[campo];
+            if (valor !== undefined && valor !== null && valor !== '') {
+                desc += `<tr><td><b>${escapeXml(campo)}</b></td><td>${escapeXml(String(valor))}</td></tr>`;
+            }
+        });
+        if (dado.tecnico) desc += `<tr><td><b>TECNICO</b></td><td>${escapeXml(dado.tecnico)}</td></tr>`;
+        if (dado.dataColeta) desc += `<tr><td><b>DATA_COLETA</b></td><td>${escapeXml(new Date(dado.dataColeta).toLocaleString('pt-BR'))}</td></tr>`;
+        desc += '</table><br/>Coordenadas: ' + lat + ', ' + lon;
+        
+        kml += `    <description><![CDATA[${desc}]]></description>\n`;
+        kml += '    <styleUrl>#fauna_errante</styleUrl>\n';
+        kml += '    <Point>\n';
+        kml += `      <coordinates>${lon},${lat},0</coordinates>\n`;
+        kml += '    </Point>\n';
+        kml += '  </Placemark>\n';
+    });
+    
+    kml += '</Document>\n';
+    kml += '</kml>';
+    
+    const fileName = 'Questionario_FAUNA_ERRANTE_CMD.kml';
+    
+    const fileId = await buscarArquivoExistente(CmdSync.folder_id, fileName);
+    
+    const base64 = btoa(unescape(encodeURIComponent(kml)));
+    
+    const attributes = JSON.stringify({ name: fileName, parent: { id: CmdSync.folder_id } });
+    
+    const url = fileId
+        ? `https://upload.box.com/api/2.0/files/${fileId}/content`
+        : 'https://upload.box.com/api/2.0/files/content';
+    
+    const resp = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            url: url,
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + Sync.access_token },
+            upload: true,
+            attributes: attributes,
+            fileBase64: base64,
+            fileName: fileName
+        })
+    });
+    
+    const data = await resp.json();
+    if (resp.ok && data.entries) {
+        CmdSync.kml_file_id = data.entries[0].id;
+        console.log('KML CMD salvo:', data.entries[0].name);
+    }
+}
+
+async function buscarArquivoExistente(folderId, fileName) {
+    try {
+        const data = await boxFetch(
+            `https://api.box.com/2.0/folders/${folderId}/items?limit=1000&fields=name,id`,
+            { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+        );
+        const existente = (data.entries || []).find(
+            e => e.type === 'file' && e.name === fileName
+        );
+        return existente ? existente.id : null;
+    } catch (e) {
+        return null;
     }
 }
 

@@ -332,6 +332,143 @@
         </form>
     </div>
 
+    <!-- ========== TELA CRIAR PARCELA ========== -->
+    <div id="tela-criar-parcela" class="tela">
+        <header class="header">
+            <button id="btn-voltar-mapa-parcela" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1>Nova Parcela</h1>
+                <span id="coordenadas-parcela-gps">Lat: --- | Lon: ---</span>
+            </div>
+            <button id="btn-salvar-parcela" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+        
+        <form id="form-criar-parcela" class="form-coleta">
+            <div id="campos-criar-parcela">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== TELA DETALHE PARCELA ========== -->
+    <div id="tela-detalhe-parcela" class="tela">
+        <header class="header">
+            <button id="btn-voltar-mapa-detalhe" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="parcela-nome-titulo">Parcela</h1>
+                <span id="parcela-fisionomia-sub">Fisionomia</span>
+            </div>
+            <div></div>
+        </header>
+        
+        <div class="parcela-detalhe-lista" id="parcela-detalhe-lista">
+            <!-- Itens gerados dinamicamente: Caracterizacao, Arvoreo, Arbustivo, Herbaceo -->
+        </div>
+    </div>
+
+    <!-- ========== TELA LISTA INDIVIDUOS ========== -->
+    <div id="tela-lista-individuos" class="tela">
+        <header class="header">
+            <button id="btn-voltar-detalhe" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="estrato-titulo">Arbóreo</h1>
+                <span id="estrato-parcela-nome">Parcela</span>
+            </div>
+            <div></div>
+        </header>
+        
+        <div class="lista-individuos" id="lista-individuos">
+            <!-- Individuos gerados dinamicamente -->
+        </div>
+        
+        <button id="btn-novo-individuo" class="btn-novo-individuo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Novo Indivíduo
+        </button>
+    </div>
+
+    <!-- ========== TELA FORM INDIVIDUO ========== -->
+    <div id="tela-form-individuo" class="tela">
+        <header class="header">
+            <button id="btn-voltar-lista" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="form-individuo-titulo">Novo Indivíduo</h1>
+                <span id="form-individuo-estrato">Arbóreo</span>
+            </div>
+            <button id="btn-salvar-individuo" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+        
+        <form id="form-individuo" class="form-coleta">
+            <div id="campos-form-individuo">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== TELA FORM CARACTERIZACAO ========== -->
+    <div id="tela-form-caracterizacao" class="tela">
+        <header class="header">
+            <button id="btn-voltar-detalhe-caract" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1>Caracterização</h1>
+                <span id="caract-parcela-nome">Parcela</span>
+            </div>
+            <button id="btn-salvar-caracterizacao" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+        
+        <form id="form-caracterizacao" class="form-coleta">
+            <div id="campos-form-caracterizacao">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
     <!-- ========== MODAL DE SYNC ========== -->
     <!-- ========== MODAL REVISAO ========== -->
     <div id="modal-revisao" class="modal">
@@ -392,7 +529,7 @@
     <!-- Dados embutidos (para funcionar sem servidor) -->
     <script src="dados/projetos.js"></script>
     <script src="dados/config.js"></script>
-    <script src="dados/config_inventario.js"></script>
+    <script src="dados/config_inventario.js?t=20260825"></script>
     <script src="dados/Questionario_PAEBM_SAG.js"></script>
     <script src="dados/Animais_Domesticos_PAEBM_SAG.js"></script>
     <script src="dados/Moradores_PAEBM_SAG.js"></script>
@@ -403,9 +540,9 @@
     <script src="Inventario_Florestal/Quadrantes.js"></script>
     
     <!-- JavaScript do App -->
-    <script src="js/sync.js?t=20260805"></script>
-    <script src="js/excel.js?t=20260805"></script>
-    <script src="js/app.js?t=20260819b"></script>
-    <script src="js/map.js?v=4"></script>
+    <script src="js/sync.js?t=20260825"></script>
+    <script src="js/excel.js?t=20260825"></script>
+    <script src="js/app.js?t=20260825"></script>
+    <script src="js/map.js?t=20260825"></script>
 </body>
 </html>

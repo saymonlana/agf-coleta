@@ -7,6 +7,115 @@ var DADOS_CONFIG_INVENTARIO = {
         box_geojson_folder: '400216557385',
         criado_em: '2026-07-15'
     },
+    fisionomias: ['FESD', 'Cerrado', 'Campo Rupestre', 'Outros'],
+    parcela: {
+        camposBasicos: [
+            { nome: 'NOME_PARCELA', label: 'Nome da Parcela', tipo: 'texto', obrigatorio: true, placeholder: 'Ex: frt007' },
+            { nome: 'FISIONOMIA', label: 'Fisionomia', tipo: 'lista', obrigatorio: true, opcoes: ['FESD', 'Cerrado', 'Campo Rupestre', 'Outros'] },
+            { nome: 'DATA', label: 'Data', tipo: 'data', obrigatorio: true },
+            { nome: 'RESPONSAVEL_DE_CAMPO', label: 'Responsável de Campo', tipo: 'texto', obrigatorio: true },
+            { nome: 'LOCALIDADE', label: 'Localidade', tipo: 'texto', obrigatorio: true },
+            { nome: 'TAMANHO_DA_PARCELA', label: 'Tamanho da Parcela (m²)', tipo: 'texto', obrigatorio: true },
+            { nome: 'USO_PREVIO', label: 'Uso Prévio', tipo: 'texto', obrigatorio: true },
+            { nome: 'USO_SOLO', label: 'Uso do Solo', tipo: 'texto', obrigatorio: true },
+            { nome: 'OBSERVACOES', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+        ],
+        caracterizacao: {
+            FESD: [
+                { nome: 'NUMERO_ESTRATOS', label: 'Número de Estratos', tipo: 'texto', obrigatorio: true },
+                { nome: 'EPIFITAS', label: 'Epifitas', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'ORQUIDEAS', label: 'Orquídeas', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'BROMELIAS', label: 'Bromélias', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'MUSGOS_LIQUENS', label: 'Musgos e Líquens', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'SERRAPILHEIRA', label: 'Serrapilheira', tipo: 'lista', obrigatorio: true, opcoes: ['Rala', 'Pouca', 'Moderada', 'Densa'] },
+                { nome: 'TREPADEIRAS_LENHOSAS', label: 'Trepadeiras Lenhosas', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'TREPADEIRAS_HERBACEA', label: 'Trepadeiras Herbáceas', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'DENSIDADE_DE_ARBUSTOS', label: 'Densidade de Arbustos', tipo: 'lista', obrigatorio: true, opcoes: ['Ausente', 'Poucas', 'Moderado', 'Abundante'] },
+                { nome: 'RELEVO', label: 'Relevo', tipo: 'texto', obrigatorio: true },
+                { nome: 'ANTROPIZACAO', label: 'Antropização', tipo: 'textarea', obrigatorio: true },
+                { nome: 'OBSERVACOES_CARACT', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ],
+            Cerrado: [
+                { nome: 'ANALISE_PAISA_PRE_EX', label: 'Análise Paisagística Pré-Existente', tipo: 'texto', obrigatorio: true },
+                { nome: 'PORCENT_COBER_HERBA_ARBUS', label: 'Cobertura Herbácea/Arbustiva (%)', tipo: 'texto', obrigatorio: true },
+                { nome: 'PORCENT_SOLO_EXPOSTO', label: 'Solo Exposto (%)', tipo: 'texto', obrigatorio: true },
+                { nome: 'PORCENT_COBERT_DO_SOLO_SERRAP', label: 'Cobertura do Solo/Serrapilheira (%)', tipo: 'texto', obrigatorio: true },
+                { nome: 'ANTROPIZACAO_DA_AREA_TIPO', label: 'Antropização (Tipo)', tipo: 'texto', obrigatorio: true },
+                { nome: 'ANTROPIZACAO_DA_AREA_INTENS', label: 'Antropização (Intensidade)', tipo: 'texto', obrigatorio: true },
+                { nome: 'ANALISE_PAISAGEM_FITOFISIONOM', label: 'Fitofisionomia', tipo: 'texto', obrigatorio: true },
+                { nome: 'OBSERVACOES_CARACT', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ],
+            'Campo Rupestre': [
+                { nome: 'HISTORICO_USO', label: 'Histórico de Uso', tipo: 'textarea', obrigatorio: true },
+                { nome: 'COBER_VEGE_VIVA_SOLO', label: 'Cobertura Vegetal Viva do Solo', tipo: 'texto', obrigatorio: true },
+                { nome: 'TIPO_SUBSTRATO', label: 'Tipo de Substrato', tipo: 'texto', obrigatorio: true },
+                { nome: 'GEOAMBIENTE', label: 'Geoambiente', tipo: 'texto', obrigatorio: true },
+                { nome: 'ESPECIES_LENHOSAS', label: 'Espécies Lenhosas', tipo: 'texto', obrigatorio: true },
+                { nome: 'OBSERVACOES_CARACT', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ],
+            Outros: [
+                { nome: 'DESCRICAOLocal', label: 'Descrição da Localidade', tipo: 'textarea', obrigatorio: true },
+                { nome: 'RELEVO', label: 'Relevo', tipo: 'texto', obrigatorio: false },
+                { nome: 'OBSERVACOES_CARACT', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ]
+        },
+        arvoreo: {
+            campos: [
+                { nome: 'NUMERO', label: 'Número', tipo: 'texto', obrigatorio: true },
+                { nome: 'NOME_COMUM', label: 'Nome Comum', tipo: 'texto', obrigatorio: true },
+                { nome: 'NOME_CIENTIFICO', label: 'Nome Científico', tipo: 'texto', obrigatorio: true },
+                { nome: 'FAMILIA', label: 'Família', tipo: 'texto', obrigatorio: true },
+                { nome: 'FUSTE', label: 'Fuste (ex: 1 de 3)', tipo: 'fuste_grupo', obrigatorio: true },
+                { nome: 'ALTURA', label: 'Altura (m)', tipo: 'fuste_campo', obrigatorio: true },
+                { nome: 'CAP', label: 'CAP (cm)', tipo: 'fuste_campo', obrigatorio: true },
+                { nome: 'ORIGEM_NATU_EXO_NATIV', label: 'Origem', tipo: 'lista', obrigatorio: true, opcoes: ['Nativa', 'Exótica', 'Naturalizada'] },
+                { nome: 'STATUS', label: 'Status', tipo: 'texto', obrigatorio: true },
+                { nome: 'EPIFITAS', label: 'Epifitas', tipo: 'textarea', obrigatorio: false },
+                { nome: 'FOTO', label: 'Foto', tipo: 'texto', obrigatorio: false },
+                { nome: 'OBSERVACOES', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ],
+            camposCopa: [
+                { nome: 'COPA_D1', label: 'Copa D1 (m)', tipo: 'fuste_campo', obrigatorio: true },
+                { nome: 'COPA_D2', label: 'Copa D2 (m)', tipo: 'fuste_campo', obrigatorio: true }
+            ],
+            copaObrigatoria: ['Cerrado', 'Campo Rupestre']
+        },
+        arbustivo: {
+            campos: [
+                { nome: 'NUMERO', label: 'Número', tipo: 'texto', obrigatorio: true },
+                { nome: 'NOME_COMUM', label: 'Nome Comum', tipo: 'texto', obrigatorio: true },
+                { nome: 'NOME_CIENTIFICO', label: 'Nome Científico', tipo: 'texto', obrigatorio: true },
+                { nome: 'FAMILIA', label: 'Família', tipo: 'texto', obrigatorio: true },
+                { nome: 'FUSTE', label: 'Fuste (ex: 1 de 3)', tipo: 'fuste_grupo', obrigatorio: true },
+                { nome: 'ALTURA', label: 'Altura (m)', tipo: 'fuste_campo', obrigatorio: true },
+                { nome: 'CAP', label: 'CAP (cm)', tipo: 'fuste_campo', obrigatorio: true },
+                { nome: 'ORIGEM_NATU_EXO_NATIV', label: 'Origem', tipo: 'lista', obrigatorio: true, opcoes: ['Nativa', 'Exótica', 'Naturalizada'] },
+                { nome: 'STATUS', label: 'Status', tipo: 'texto', obrigatorio: true },
+                { nome: 'FOTO', label: 'Foto', tipo: 'texto', obrigatorio: false },
+                { nome: 'OBSERVACOES', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ],
+            camposCopa: [
+                { nome: 'COPA_D1', label: 'Copa D1 (m)', tipo: 'fuste_campo', obrigatorio: true },
+                { nome: 'COPA_D2', label: 'Copa D2 (m)', tipo: 'fuste_campo', obrigatorio: true }
+            ],
+            copaObrigatoria: ['Campo Rupestre']
+        },
+        herbaceo: {
+            campos: [
+                { nome: 'NUMERO', label: 'Número', tipo: 'texto', obrigatorio: true },
+                { nome: 'NOME_COMUM', label: 'Nome Comum', tipo: 'texto', obrigatorio: true },
+                { nome: 'NOME_CIENTIFICO', label: 'Nome Científico', tipo: 'texto', obrigatorio: true },
+                { nome: 'FAMILIA', label: 'Família', tipo: 'texto', obrigatorio: true },
+                { nome: 'NUMERO_DE_INDIVIDUOS', label: 'Nº de Indivíduos', tipo: 'numero', obrigatorio: true },
+                { nome: 'FOTO', label: 'Foto', tipo: 'texto', obrigatorio: false },
+                { nome: 'OBSERVACOES', label: 'Observações', tipo: 'textarea', obrigatorio: false }
+            ],
+            camposCobertura: [
+                { nome: 'PORCENTAGEM_COBERTA_ESPECIE', label: '% Cobertura pela Espécie', tipo: 'texto', obrigatorio: true }
+            ],
+            coberturaObrigatoria: ['Cerrado']
+        }
+    },
     camadas: {
         Censo: {
             nome: 'Censo Arbóreo',

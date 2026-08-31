@@ -1106,43 +1106,113 @@ html, body {
    FUSTES DINAMICOS
    ============================================ */
 
-.fuste-bloco {
-    background: #f0f7f0;
-    border-left: 4px solid #27AE60;
-    border-radius: 4px;
+.fuste-secao {
+    background: var(--branco);
+    border: 2px solid var(--verde-claro);
+    border-radius: var(--raio-medio);
     padding: var(--espaco-md);
+    margin-bottom: var(--espaco-md);
+}
+
+.fuste-header {
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--verde-escuro);
+    text-transform: uppercase;
+    margin-bottom: var(--espaco-md);
+    letter-spacing: 0.5px;
+}
+
+.fuste-icone {
+    font-size: 20px;
+}
+
+.fuste-lista-blocos {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaco-md);
+}
+
+.fuste-bloco-novo {
+    background: #f0f7f0;
+    border-radius: var(--raio-pequeno);
+    padding: var(--espaco-md);
+    border: 1px solid var(--verde-claro);
+}
+
+.fuste-bloco-label {
+    display: inline-block;
+    background: var(--verde-escuro);
+    color: var(--branco);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
     margin-bottom: var(--espaco-sm);
+    text-transform: uppercase;
 }
 
-.fuste-bloco-header {
-    font-weight: 600;
-    color: #27AE60;
-    margin-bottom: var(--espaco-sm);
-    font-size: 14px;
+.fuste-bloco-campos {
+    display: flex;
+    gap: var(--espaco-sm);
+    flex-wrap: wrap;
 }
 
-.fuste-bloco .campo-formulario label {
-    display: block !important;
+.fuste-bloco-campos .campo-formulario {
+    flex: 1;
+    min-width: 120px;
+    margin-bottom: 0;
 }
 
-.fuste-bloco .campo-formulario input {
-    width: 100% !important;
-    box-sizing: border-box;
+.fuste-bloco-campos .campo-formulario label {
+    font-size: 12px;
+    margin-bottom: 4px;
 }
 
-#input-fuste-grupo {
+.fuste-bloco-campos .campo-formulario input {
     width: 100%;
     box-sizing: border-box;
-    padding: 14px 16px;
-    font-size: 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: var(--raio-medio);
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
     background: var(--branco);
-    color: var(--cinza-escuro);
 }
 
-#fuste-grupo-container label {
-    display: block !important;
+.fuste-bloco-remover {
+    background: none;
+    border: none;
+    color: var(--erro);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.fuste-bloco-remover:hover {
+    color: #c0392b;
+}
+
+.btn-adicionar-fuste {
+    width: 100%;
+    padding: 12px;
+    margin-top: var(--espaco-md);
+    background: var(--branco);
+    border: 2px dashed var(--verde-medio);
+    border-radius: var(--raio-pequeno);
+    color: var(--verde-escuro);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-adicionar-fuste:hover {
+    background: var(--verde-claro);
+    border-color: var(--verde-escuro);
 }
 
 .popup-fuste {
@@ -1506,4 +1576,282 @@ html, body {
 
 .crosshair svg {
     display: block;
+}
+
+/* ============================================
+   TELA DETALHE PARCELA
+   ============================================ */
+
+.parcela-detalhe-lista {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--espaco-md);
+}
+
+.parcela-item {
+    display: flex;
+    align-items: center;
+    padding: var(--espaco-md);
+    margin-bottom: var(--espaco-sm);
+    background: var(--branco);
+    border-radius: var(--raio-medio);
+    box-shadow: var(--sombra-leve);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.parcela-item:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-media);
+}
+
+.parcela-item:active {
+    transform: translateY(0);
+}
+
+.parcela-item-icone {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--raio-pequeno);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin-right: var(--espaco-md);
+    flex-shrink: 0;
+}
+
+.parcela-item-icone.caracterizacao {
+    background: #E3F2FD;
+    color: #1976D2;
+}
+
+.parcela-item-icone.arvoreo {
+    background: #E8F5E9;
+    color: #2E7D32;
+}
+
+.parcela-item-icone.arbustivo {
+    background: #F1F8E9;
+    color: #558B2F;
+}
+
+.parcela-item-icone.herbaceo {
+    background: #FFF8E1;
+    color: #F9A825;
+}
+
+.parcela-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.parcela-item-info h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cinza-escuro);
+    margin-bottom: 2px;
+}
+
+.parcela-item-info p {
+    font-size: 12px;
+    color: #888;
+}
+
+.parcela-item-seta {
+    font-size: 20px;
+    color: #ccc;
+    margin-left: var(--espaco-sm);
+}
+
+/* ============================================
+   TELA LISTA INDIVIDUOS
+   ============================================ */
+
+.lista-individuos {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--espaco-md);
+    padding-bottom: 80px;
+}
+
+.individuo-card {
+    display: flex;
+    align-items: center;
+    padding: var(--espaco-md);
+    margin-bottom: var(--espaco-sm);
+    background: var(--branco);
+    border-radius: var(--raio-medio);
+    box-shadow: var(--sombra-leve);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.individuo-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--sombra-media);
+}
+
+.individuo-card:active {
+    transform: translateY(0);
+}
+
+.individuo-numero {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--verde-claro);
+    color: var(--verde-escuro);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    margin-right: var(--espaco-md);
+    flex-shrink: 0;
+}
+
+.individuo-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.individuo-info h4 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--cinza-escuro);
+    margin-bottom: 2px;
+}
+
+.individuo-info p {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.individuo-cientifico {
+    color: #666 !important;
+    font-style: italic;
+}
+
+.individuo-familia {
+    color: #777 !important;
+    font-size: 11px !important;
+}
+
+.individuo-detalhes {
+    color: #999 !important;
+    font-size: 11px !important;
+    margin-top: 2px;
+}
+
+.individuo-menu {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    transition: all 0.2s;
+}
+
+.individuo-menu:hover {
+    background: #f0f0f0;
+    color: #333;
+}
+
+.individuo-menu-opcoes {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: var(--branco);
+    border-radius: var(--raio-pequeno);
+    box-shadow: var(--sombra-media);
+    z-index: 50;
+    min-width: 100px;
+    display: none;
+}
+
+.individuo-menu-opcoes.ativo {
+    display: block;
+}
+
+.individuo-menu-opcoes button {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--cinza-escuro);
+}
+
+.individuo-menu-opcoes button:hover {
+    background: #f5f5f5;
+}
+
+.individuo-menu-opcoes button.btn-excluir {
+    color: var(--erro);
+}
+
+/* ============================================
+   BOTAO NOVO INDIVIDUO
+   ============================================ */
+
+.btn-novo-individuo {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: var(--espaco-sm);
+    padding: 14px 20px;
+    background: var(--verde-medio);
+    color: var(--branco);
+    border: none;
+    border-radius: 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--sombra-forte);
+    z-index: 100;
+    transition: all 0.3s ease;
+}
+
+.btn-novo-individuo svg {
+    width: 20px;
+    height: 20px;
+}
+
+.btn-novo-individuo:hover {
+    background: var(--verde-escuro);
+    transform: translateY(-2px);
+}
+
+.btn-novo-individuo:active {
+    transform: translateY(0);
+}
+
+/* ============================================
+   SECAO VAZIA
+   ============================================ */
+
+.secao-vazia {
+    text-align: center;
+    padding: var(--espaco-xl);
+    color: #999;
+}
+
+.secao-vazia p {
+    font-size: 14px;
+    margin-bottom: var(--espaco-sm);
 }

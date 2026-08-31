@@ -1052,6 +1052,119 @@
       "total_campos": 9,
       "geometria": "3D Point",
       "src": "EPSG:31983"
+    },
+    "Questionario_FAUNA_ERRANTE_CMD": {
+      "nome": "Questionario_FAUNA_ERRANTE_CMD",
+      "campos": [
+        {
+          "nome": "PONTO",
+          "label": "Ponto",
+          "tipo": "texto",
+          "obrigatorio": true
+        },
+        {
+          "nome": "ENDERECO_REGISTRO",
+          "label": "Endereco de Registro",
+          "tipo": "texto",
+          "obrigatorio": true
+        },
+        {
+          "nome": "BAIRRO",
+          "label": "Bairro",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "MUNICIPIO",
+          "label": "Municipio",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "E_UTC",
+          "label": "E (m)",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "N_UTC",
+          "label": "N (m)",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "LATITUDE",
+          "label": "Latitude",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "LONGITUDE",
+          "label": "Longitude",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "NOME_CIENTIFICO",
+          "label": "Nome Cientifico",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "NOME_POPULAR",
+          "label": "Nome Popular",
+          "tipo": "texto",
+          "obrigatorio": false
+        },
+        {
+          "nome": "SEXO",
+          "label": "Sexo",
+          "tipo": "lista",
+          "obrigatorio": false,
+          "opcoes": [
+            "Femea",
+            "Macho",
+            "Nao identificado"
+          ]
+        },
+        {
+          "nome": "QUANTIDADE",
+          "label": "Quantidade (Individuos)",
+          "tipo": "numero",
+          "obrigatorio": false
+        },
+        {
+          "nome": "OBSERVACAO",
+          "label": "Observacao",
+          "tipo": "textarea",
+          "obrigatorio": false
+        },
+        {
+          "nome": "DATA_REGISTRO",
+          "label": "Data Registro",
+          "tipo": "data",
+          "obrigatorio": false
+        },
+        {
+          "nome": "HORA_REGISTRO",
+          "label": "Hora do Registro",
+          "tipo": "hora",
+          "obrigatorio": false
+        },
+        {
+          "nome": "BARRAGEM",
+          "label": "Barragem",
+          "tipo": "lista",
+          "obrigatorio": false,
+          "opcoes": [
+            "ZAS",
+            "ZSS"
+          ]
+        }
+      ],
+      "total_campos": 16,
+      "geometria": "Point",
+      "src": "EPSG:4326"
     }
   },
   "camadas": {

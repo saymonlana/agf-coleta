@@ -244,7 +244,7 @@ function adicionarMarcadorPosicao(posicao) {
         .addTo(mapa);
 }
 
-function adicionarPontoNoMapa(dados) {
+function adicionarPontoNoMapa(dados, idSequencial) {
     if (!dados || !dados.latitude || !dados.longitude) return;
     
     const campos = dados.campos || {};
@@ -284,7 +284,7 @@ function adicionarPontoNoMapa(dados) {
     marcador.camada = dados.camada || null;
     
     // Criar popup
-    const popupContent = criarPopupConteudo(dados);
+    const popupContent = criarPopupConteudo(dados, idSequencial);
     marcador.bindPopup(popupContent, {
         maxWidth: 300,
         className: 'popup-ponto'
@@ -295,7 +295,7 @@ function adicionarPontoNoMapa(dados) {
     marcadores.push(marcador);
 }
 
-function criarPopupConteudo(dados) {
+function criarPopupConteudo(dados, idSequencial) {
     const camada = dados.camada || '';
     const campos = dados.campos || {};
     
@@ -351,6 +351,7 @@ function criarPopupConteudo(dados) {
                 <span>${camada || ''} - <span class="revisao-status ${statusClass}">${statusLabel}</span></span>
             </div>
             <div class="popup-corpo">
+                <p><strong>ID:</strong> ${idSequencial || ''}</p>
                 ${camposHtml}
                 <p><strong>Coletado por:</strong> ${dados.tecnico || 'N/A'}</p>
                 <p><strong>Data:</strong> ${formatarData(dados.dataColeta)}</p>
@@ -386,6 +387,9 @@ function carregarPontosNoMapa() {
     layerPontos.clearLayers();
     marcadores = [];
     
+    // Contadores sequenciais por camada
+    const contadoresPorCamada = {};
+    
     // Carregar dados do Box
     const dadosBox = App.dadosBox[App.projetoAtual] || [];
     
@@ -410,7 +414,22 @@ function carregarPontosNoMapa() {
             }
             
             if (lat && lng) {
-                adicionarFeatureNoMapa(feature, lat, lng);
+                // Obter camada e incrementar contador
+                const camada = feature._camada || feature.properties?._camada || 'default';
+                if (!contadoresPorCamada[camada]) contadoresPorCamada[camada] = 1;
+                const idSequencial = contadoresPorCamada[camada]++;
+                
+                // Verificar se é parcela
+                if (feature.properties?.tipo === 'parcela' || feature._tipo === 'parcela') {
+                    adicionarParcelaNoMapa({
+                        ...feature.properties,
+                        latitude: lat,
+                        longitude: lng,
+                        id: feature.properties?._id || feature._id
+                    }, idSequencial);
+                } else {
+                    adicionarFeatureNoMapa(feature, lat, lng, idSequencial);
+                }
             }
         }
     });
@@ -419,7 +438,17 @@ function carregarPontosNoMapa() {
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
     dadosLocais.forEach(dado => {
         if (dado.latitude && dado.longitude) {
-            adicionarPontoNoMapa(dado);
+            // Obter camada e incrementar contador
+            const camada = dado.camada || 'default';
+            if (!contadoresPorCamada[camada]) contadoresPorCamada[camada] = 1;
+            const idSequencial = contadoresPorCamada[camada]++;
+            
+            // Verificar se é parcela
+            if (dado.tipo === 'parcela') {
+                adicionarParcelaNoMapa(dado, idSequencial);
+            } else {
+                adicionarPontoNoMapa(dado, idSequencial);
+            }
         }
     });
     
@@ -430,7 +459,7 @@ function carregarPontosNoMapa() {
 // ADICIONAR FEATURE DO BOX NO MAPA
 // ============================================
 
-function adicionarFeatureNoMapa(feature, lat, lng) {
+function adicionarFeatureNoMapa(feature, lat, lng, idSequencial) {
     const props = feature.properties || {};
     
     // Determinar cor: primeiro por camada (Inventario), depois por status
@@ -467,7 +496,7 @@ function adicionarFeatureNoMapa(feature, lat, lng) {
     marcador.camada = camada || null;
     
     // Criar popup
-    const popupContent = criarPopupFeature(feature, camada);
+    const popupContent = criarPopupFeature(feature, camada, idSequencial);
     marcador.bindPopup(popupContent, {
         maxWidth: 300,
         className: 'popup-ponto'
@@ -480,7 +509,7 @@ function adicionarFeatureNoMapa(feature, lat, lng) {
 // CRIAR POPUP PARA FEATURE DO BOX
 // ============================================
 
-function criarPopupFeature(feature, camada) {
+function criarPopupFeature(feature, camada, idSequencial) {
     const props = feature.properties || {};
     
     let cor = '#3498DB';
@@ -539,6 +568,7 @@ function criarPopupFeature(feature, camada) {
                 <span>${camada || ''} - <span class="revisao-status sincronizado">Sincronizado</span></span>
             </div>
             <div class="popup-corpo">
+                <p><strong>ID:</strong> ${idSequencial || ''}</p>
                 ${camposHtml}
             </div>
             <div class="popup-rodape">
@@ -546,6 +576,50 @@ function criarPopupFeature(feature, camada) {
             </div>
         </div>
     `;
+}
+
+// ============================================
+// ADICIONAR PARCELA NO MAPA
+// ============================================
+
+function adicionarParcelaNoMapa(parcela, idSequencial) {
+    const lat = parcela.latitude;
+    const lng = parcela.longitude;
+    
+    if (!lat || !lng) return;
+    
+    // Cor baseada na fisionomia
+    const coresFisionomia = {
+        'Cerrado': '#E67E22',
+        'Floresta Estacional Semidecidual': '#27AE60',
+        'Floresta Ombrófila': '#229954',
+        'Campos Rupestres': '#8E44AD',
+        'Mata de Galeria': '#1ABC9C',
+        'Veredas': '#D4AC0D'
+    };
+    const cor = coresFisionomia[parcela.fisionomia] || '#3498DB';
+    
+    // Criar icone
+    const icon = L.divIcon({
+        className: 'marcador-parcela',
+        html: `<div class="marcador-parcela-inner" style="background-color: ${cor}"></div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+    });
+    
+    // Criar marcador
+    const marcador = L.marker([lat, lng], { icon: icon })
+        .addTo(layerPontos);
+    marcador.camada = 'inventario';
+    
+    // Criar popup
+    const popupContent = criarPopupParcela(parcela, idSequencial);
+    marcador.bindPopup(popupContent, {
+        maxWidth: 300,
+        className: 'popup-ponto'
+    });
+    
+    marcadores.push(marcador);
 }
 
 // ============================================
@@ -628,8 +702,88 @@ estiloMarcadores.textContent = `
         left: 6px;
         box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
+    
+    .marcador-parcela {
+        background: transparent;
+    }
+    
+    .marcador-parcela-inner {
+        width: 16px;
+        height: 16px;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    
+    .popup-estratos {
+        margin-top: 8px;
+        padding: 8px;
+        background: #f8f9fa;
+        border-radius: 4px;
+    }
+    
+    .popup-estratos strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+    }
+    
+    .popup-estratos p {
+        margin: 2px 0;
+        font-size: 11px;
+    }
 `;
 document.head.appendChild(estiloMarcadores);
+
+// ============================================
+// POPUP DE PARCELA
+// ============================================
+
+function criarPopupParcela(parcela, idSequencial) {
+    const nome = parcela.nome || 'Parcela';
+    const fisionomia = parcela.fisionomia || 'N/A';
+    const responsavel = parcela.responsavel || parcela.tecnico || '';
+    const dataColeta = parcela.dataColeta || parcela.data_coleta || '';
+    
+    // Contar individuos por estrato
+    const arvoreo = (parcela.arvoreo || []).length;
+    const arbustivo = (parcela.arbustivo || []).length;
+    const herbaceo = (parcela.herbaceo || []).length;
+    const total = arvoreo + arbustivo + herbaceo;
+    
+    // Cor da fisionomia
+    const coresFisionomia = {
+        'Cerrado': '#E67E22',
+        'Floresta Estacional Semidecidual': '#27AE60',
+        'Floresta Ombrófila': '#229954',
+        'Campos Rupestres': '#8E44AD',
+        'Mata de Galeria': '#1ABC9C',
+        'Veredas': '#D4AC0D'
+    };
+    const cor = coresFisionomia[fisionomia] || '#3498DB';
+    
+    return `
+        <div class="popup-conteudo">
+            <div class="popup-cabecalho" style="background-color: ${cor}">
+                <h4>${nome}</h4>
+                <span>${fisionomia}</span>
+            </div>
+            <div class="popup-corpo">
+                <p><strong>ID:</strong> ${idSequencial || ''}</p>
+                <p><strong>Responsavel:</strong> ${responsavel || 'N/A'}</p>
+                <p><strong>Data Coleta:</strong> ${dataColeta || 'N/A'}</p>
+                <div class="popup-estratos">
+                    <strong>Estratos:</strong>
+                    <p>Arboreo: ${arvoreo} | Arbustivo: ${arbustivo} | Herbaceo: ${herbaceo}</p>
+                    <p>Total: ${total} individuos</p>
+                </div>
+            </div>
+            <div class="popup-rodape">
+                <button class="btn-editar-popup" onclick="editarParcela('${parcela.id}')">Editar</button>
+            </div>
+        </div>
+    `;
+}
 
 function limparMarcadores() {
     if (layerPontos) layerPontos.clearLayers();

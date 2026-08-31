@@ -340,7 +340,7 @@ function configurarEventListeners() {
     try { document.getElementById('btn-salvar').addEventListener('click', handleSalvar); } catch(e) {}
     
     // Botao voltar do mapa (coleta -> mapa)
-    try { document.getElementById('btn-voltar-mapa').addEventListener('click', () => { restaurarTituloProjeto(); mostrarTela('tela-mapa'); }); } catch(e) {}
+    try { document.getElementById('btn-voltar-mapa').addEventListener('click', () => { restaurarTituloProjeto(); mostrarTela('tela-mapa', false); }); } catch(e) {}
     
     // Botao sync
     try { document.getElementById('btn-sync').addEventListener('click', handleSync); } catch(e) {}
@@ -617,7 +617,7 @@ function mostrarProjetosDoCliente(clienteId) {
             'samarco': [],
             'gerdau': [],
             'anglo': [
-                { id: 'anglo_inv1', nome: 'Projeto Anglo Inventario', descricao: 'Em configuracao' }
+                { id: 'anglo_inv1', nome: '2341 - Serpentina', descricao: 'Em configuracao' }
             ]
         },
         'fauna': {
@@ -681,9 +681,14 @@ async function abrirProjeto(projetoId) {
     const crosshair = document.getElementById('crosshair');
     if (btnColetar) {
         if (projetoId === 'inventario') {
-            btnColetar.style.display = 'none';
-            if (crosshair) crosshair.style.display = 'none';
+            btnColetar.style.display = 'flex';
+            btnColetar.style.background = '#0D4A35';
+            if (crosshair) crosshair.style.display = 'block';
             CamadasConfig.camadaAtiva = null;
+        } else if (isCmd) {
+            btnColetar.style.display = 'flex';
+            btnColetar.style.background = '#0D4A35';
+            if (crosshair) crosshair.style.display = 'block';
         } else {
             btnColetar.style.display = 'flex';
             if (crosshair) crosshair.style.display = 'none';
@@ -704,15 +709,14 @@ async function abrirProjeto(projetoId) {
             if (isCmd) {
                 mapa.setView([-19.036886, -43.424913], 13);
                 limparMarcadores();
+            } else if (projetoId === 'inventario') {
+                // Remover flag para permitir recarregar camadas e refocar
+                camadasInventarioCarregadas = false;
+                carregarCamadasInventario();
             } else {
                 mapa.setView([-20.3132, -42.6067], 13);
             }
         }, 300);
-    }
-    
-    if (isCmd) {
-        document.getElementById('contador-pontos').textContent = '0 registros';
-        return;
     }
     
     if (projetoId === 'inventario') {
@@ -773,6 +777,14 @@ function atualizarContadorPontos() {
 // ============================================
 
 function abrirFormularioColeta() {
+    // Novo fluxo: Inventario usa sistema de parcelas
+    if (App.projetoAtual === 'inventario') {
+        abrirCriarParcela();
+        return;
+    }
+    
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    
     document.getElementById('form-coleta').reset();
     document.getElementById('preview-foto').innerHTML = '';
     
@@ -788,6 +800,20 @@ function abrirFormularioColeta() {
     
     // Para Inventário, usar coordenadas do centro do mapa (crosshair)
     if (App.projetoAtual === 'inventario' && mapa) {
+        const center = mapa.getCenter();
+        document.getElementById('coordenadas-gps').textContent = 
+            `Lat: ${center.lat.toFixed(6)} | Lon: ${center.lng.toFixed(6)}`;
+        document.getElementById('coordenadas-gps').className = 'coordenadas ativo';
+        
+        // Exibir coordenadas UTM
+        exibirCoordenadasUTM(center.lat, center.lng);
+        
+        // Salvar posição do crosshair para uso no salvar
+        App.crosshairPosition = {
+            lat: center.lat,
+            lng: center.lng
+        };
+    } else if (isCmd && mapa) {
         const center = mapa.getCenter();
         document.getElementById('coordenadas-gps').textContent = 
             `Lat: ${center.lat.toFixed(6)} | Lon: ${center.lng.toFixed(6)}`;
@@ -818,7 +844,7 @@ function abrirFormularioColeta() {
     }
     
     gerarCamposFormulario();
-    mostrarTela('tela-coleta');
+    mostrarTela('tela-coleta', false);
 }
 
 function gerarCamposFormulario() {
@@ -833,9 +859,13 @@ function gerarCamposFormulario() {
     
     let campos = [];
     
+    // Verificar se é o projeto CMD (Fauna Errante)
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    
     // Buscar campos do config.json (PAEBM)
     if (App.config && App.config.camadas_coleta) {
-        const questionario = App.config.camadas_coleta['Questionario_PAEBM_SAG'];
+        const nomeCamada = isCmd ? 'Questionario_FAUNA_ERRANTE_CMD' : 'Questionario_PAEBM_SAG';
+        const questionario = App.config.camadas_coleta[nomeCamada];
         if (questionario && questionario.campos) {
             campos = questionario.campos;
         }
@@ -1142,6 +1172,71 @@ function criarCampoFormulario(campo) {
     div.appendChild(input);
     
     return div;
+}
+
+function criarBlocoFuste(numero, camposFuste, dadosExistentes) {
+    const bloco = document.createElement('div');
+    bloco.className = 'fuste-bloco-novo';
+    
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '8px';
+    
+    const label = document.createElement('span');
+    label.className = 'fuste-bloco-label';
+    label.textContent = `Fuste ${numero}`;
+    header.appendChild(label);
+    
+    const btnRemover = document.createElement('button');
+    btnRemover.type = 'button';
+    btnRemover.className = 'fuste-bloco-remover';
+    btnRemover.innerHTML = '&times;';
+    btnRemover.title = 'Remover fuste';
+    btnRemover.addEventListener('click', function() {
+        bloco.remove();
+        document.getElementById('fuste-count').textContent = 
+            document.querySelectorAll('.fuste-bloco-novo').length;
+    });
+    
+    if (numero > 1) {
+        header.appendChild(btnRemover);
+    }
+    
+    bloco.appendChild(header);
+    
+    const camposDiv = document.createElement('div');
+    camposDiv.className = 'fuste-bloco-campos';
+    
+    camposFuste.forEach(campo => {
+        const campoDiv = document.createElement('div');
+        campoDiv.className = 'campo-formulario';
+        
+        const campoLabel = document.createElement('label');
+        campoLabel.textContent = campo.label;
+        if (campo.obrigatorio) {
+            campoLabel.innerHTML += ' <span class="obrigatorio">*</span>';
+        }
+        campoDiv.appendChild(campoLabel);
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = `${campo.nome}_fuste_${numero}`;
+        input.placeholder = campo.label;
+        input.required = campo.obrigatorio;
+        
+        if (dadosExistentes && dadosExistentes[campo.nome]) {
+            input.value = dadosExistentes[campo.nome];
+        }
+        
+        campoDiv.appendChild(input);
+        camposDiv.appendChild(campoDiv);
+    });
+    
+    bloco.appendChild(camposDiv);
+    
+    return bloco;
 }
 
 function gerarBlocosFustes(valor, camposFuste, container) {
@@ -1543,8 +1638,9 @@ function handleSalvar() {
     let lat = null;
     let lng = null;
     
-    // Para Inventário, usar posição do crosshair
-    if (App.projetoAtual === 'inventario' && App.crosshairPosition) {
+    // Para Inventário e CMD, usar posição do crosshair
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    if ((App.projetoAtual === 'inventario' || isCmd) && App.crosshairPosition) {
         lat = App.crosshairPosition.lat;
         lng = App.crosshairPosition.lng;
     } else if (App.currentPosition) {
@@ -1981,7 +2077,9 @@ function atualizarCoordenadasMapa() {
     const coordenadasMapa = document.getElementById('coordenadas-mapa');
     if (!coordenadasMapa || !mapa) return;
     
-    if (CamadasConfig.camadaAtiva) {
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    
+    if (CamadasConfig.camadaAtiva || isCmd) {
         const center = mapa.getCenter();
         const zona = Math.floor((center.lng + 180) / 6) + 1;
         const utm = wgs84ParaUtm(center.lng, center.lat, zona);
@@ -2071,4 +2169,709 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+});
+
+// ============================================
+// PARCELAS - ESTADO
+// ============================================
+
+const ParcelaState = {
+    parcelaAtual: null,
+    estratoAtual: null,
+    individuoEditando: null,
+    tipoForm: null
+};
+
+// ============================================
+// PARCELAS - NAVIGACAO
+// ============================================
+
+function abrirCriarParcela() {
+    // Limpar estado - esta criando parcela nova
+    ParcelaState.parcelaAtual = null;
+    
+    const posicao = App.currentPosition || App.crosshairPosition || (mapa ? { lat: mapa.getCenter().lat, lng: mapa.getCenter().lng } : null);
+    if (!posicao) {
+        mostrarToast('Aguarde o GPS ou clique no mapa', 'aviso');
+        return;
+    }
+    
+    // Salvar posição para uso no salvar
+    App.crosshairPosition = posicao;
+    
+    const container = document.getElementById('campos-criar-parcela');
+    container.innerHTML = '';
+    
+    const config = DADOS_CONFIG_INVENTARIO.parcela;
+    config.camposBasicos.forEach(campo => {
+        container.appendChild(criarCampoFormulario(campo));
+    });
+    
+    document.getElementById('coordenadas-parcela-gps').textContent = 
+        `Lat: ${posicao.lat.toFixed(6)} | Lon: ${posicao.lng.toFixed(6)}`;
+    
+    mostrarTela('tela-criar-parcela');
+}
+
+function editarParcela(id) {
+    const dadosLocais = App.dadosLocais['inventario'] || [];
+    const parcela = dadosLocais.find(d => d.id === id);
+    
+    if (!parcela) {
+        mostrarToast('Parcela nao encontrada', 'erro');
+        return;
+    }
+    
+    // Preencher formulario com dados existentes
+    const container = document.getElementById('campos-criar-parcela');
+    container.innerHTML = '';
+    
+    const config = DADOS_CONFIG_INVENTARIO.parcela;
+    config.camposBasicos.forEach(campo => {
+        const div = criarCampoFormulario(campo);
+        const input = div.querySelector('input, select, textarea');
+        if (input && parcela.campos[campo.nome]) {
+            input.value = parcela.campos[campo.nome];
+        }
+        container.appendChild(div);
+    });
+    
+    document.getElementById('coordenadas-parcela-gps').textContent = 
+        `Lat: ${parcela.latitude.toFixed(6)} | Lon: ${parcela.longitude.toFixed(6)}`;
+    
+    // Salvar referencia para edicao
+    ParcelaState.parcelaAtual = parcela;
+    
+    mostrarTela('tela-criar-parcela');
+}
+
+function abrirDetalheParcela(parcela) {
+    ParcelaState.parcelaAtual = parcela;
+    
+    document.getElementById('parcela-nome-titulo').textContent = parcela.campos.NOME_PARCELA || 'Parcela';
+    document.getElementById('parcela-fisionomia-sub').textContent = parcela.campos.FISIONOMIA || '';
+    
+    const lista = document.getElementById('parcela-detalhe-lista');
+    lista.innerHTML = '';
+    
+    const fisionomia = parcela.campos.FISIONOMIA || 'FESD';
+    const arvoreo = parcela.arvoreo || [];
+    const arbustivo = parcela.arbustivo || [];
+    const herbaceo = parcela.herbaceo || [];
+    const temCaracterizacao = parcela.caracterizacao && Object.keys(parcela.caracterizacao).length > 0;
+    
+    const itens = [
+        {
+            classe: 'caracterizacao',
+            icone: '📋',
+            titulo: 'Caracterização',
+            detalhe: temCaracterizacao ? 'Preenchida' : 'Não preenchida',
+            acao: () => abrirFormCaracterizacao(parcela)
+        },
+        {
+            classe: 'arvoreo',
+            icone: '🌳',
+            titulo: 'Arbóreo',
+            detalhe: `${arvoreo.length} indivíduo${arvoreo.length !== 1 ? 's' : ''}`,
+            acao: () => abrirListaIndividuos('arvoreo', fisionomia)
+        },
+        {
+            classe: 'arbustivo',
+            icone: '🌿',
+            titulo: 'Arbustivo',
+            detalhe: `${arbustivo.length} indivíduo${arbustivo.length !== 1 ? 's' : ''}`,
+            acao: () => abrirListaIndividuos('arbustivo', fisionomia)
+        },
+        {
+            classe: 'herbaceo',
+            icone: '🌱',
+            titulo: 'Herbáceo',
+            detalhe: `${herbaceo.length} indivíduo${herbaceo.length !== 1 ? 's' : ''}`,
+            acao: () => abrirListaIndividuos('herbaceo', fisionomia)
+        }
+    ];
+    
+    itens.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'parcela-item';
+        div.innerHTML = `
+            <div class="parcela-item-icone ${item.classe}">${item.icone}</div>
+            <div class="parcela-item-info">
+                <h4>${item.titulo}</h4>
+                <p>${item.detalhe}</p>
+            </div>
+            <div class="parcela-item-seta">›</div>
+        `;
+        div.addEventListener('click', item.acao);
+        lista.appendChild(div);
+    });
+    
+    mostrarTela('tela-detalhe-parcela');
+}
+
+function abrirListaIndividuos(estrato, fisionomia) {
+    ParcelaState.estratoAtual = estrato;
+    
+    const nomes = { arvoreo: 'Arbóreo', arbustivo: 'Arbustivo', herbaceo: 'Herbáceo' };
+    document.getElementById('estrato-titulo').textContent = nomes[estrato] || estrato;
+    document.getElementById('estrato-parcela-nome').textContent = 
+        ParcelaState.parcelaAtual?.campos?.NOME_PARCELA || '';
+    
+    const lista = document.getElementById('lista-individuos');
+    lista.innerHTML = '';
+    
+    const individuos = ParcelaState.parcelaAtual?.[estrato] || [];
+    
+    if (individuos.length === 0) {
+        lista.innerHTML = `
+            <div class="secao-vazia">
+                <p>Nenhum indivíduo cadastrado</p>
+                <p>Toque em "Novo Indivíduo" para adicionar</p>
+            </div>
+        `;
+    } else {
+        individuos.forEach((ind, idx) => {
+            const card = document.createElement('div');
+            card.className = 'individuo-card';
+            
+            const nome = ind.NOME_COMUM || ind.NOME || `Indivíduo ${idx + 1}`;
+            const nomeCientifico = ind.NOME_CIENTIFICO || '';
+            const familia = ind.FAMILIA || '';
+            
+            let detalhes = '';
+            
+            if (estrato === 'arvoreo' || estrato === 'arbustivo') {
+                const partes = [];
+                if (ind.fustes && ind.fustes.length > 0) {
+                    partes.push(`Fustes: ${ind.fustes.length}`);
+                    const alturas = ind.fustes.map(f => parseFloat(f.ALTURA)).filter(a => !isNaN(a));
+                    const caps = ind.fustes.map(f => parseFloat(f.CAP)).filter(c => !isNaN(c));
+                    if (alturas.length > 0) {
+                        const mediaAltura = (alturas.reduce((a, b) => a + b, 0) / alturas.length).toFixed(1);
+                        partes.push(`Altura méd: ${mediaAltura}m`);
+                    }
+                    if (caps.length > 0) {
+                        const mediaCap = (caps.reduce((a, b) => a + b, 0) / caps.length).toFixed(1);
+                        partes.push(`CAP méd: ${mediaCap}cm`);
+                    }
+                }
+                detalhes = partes.join(' | ');
+            } else if (estrato === 'herbaceo') {
+                const partes = [];
+                if (ind.NUM_INDIVIDUOS) partes.push(`${ind.NUM_INDIVIDUOS} indivíduos`);
+                if (ind.PERCENTUAL_COBERTURA) partes.push(`${ind.PERCENTUAL_COBERTURA}% cobertura`);
+                detalhes = partes.join(' | ');
+            }
+            
+            card.innerHTML = `
+                <div class="individuo-numero">${idx + 1}</div>
+                <div class="individuo-info">
+                    <h4>${nome}</h4>
+                    ${nomeCientifico ? `<p class="individuo-cientifico"><i>${nomeCientifico}</i></p>` : ''}
+                    ${familia ? `<p class="individuo-familia">Família: ${familia}</p>` : ''}
+                    <p class="individuo-detalhes">${detalhes}</p>
+                </div>
+                <button class="individuo-menu" onclick="event.stopPropagation(); toggleMenuIndividuo(${idx})">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
+                    </svg>
+                </button>
+                <div class="individuo-menu-opcoes" id="menu-individuo-${idx}">
+                    <button onclick="event.stopPropagation(); editarIndividuo(${idx})">Editar</button>
+                    <button onclick="event.stopPropagation(); confirmarExcluirIndividuo(${idx})" class="btn-excluir">Excluir</button>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => editarIndividuo(idx));
+            lista.appendChild(card);
+        });
+    }
+    
+    const btnNovo = document.getElementById('btn-novo-individuo');
+    btnNovo.onclick = () => abrirFormIndividuo(null, estrato, fisionomia);
+    
+    mostrarTela('tela-lista-individuos');
+}
+
+function toggleMenuIndividuo(idx) {
+    const menu = document.getElementById(`menu-individuo-${idx}`);
+    if (menu) {
+        menu.classList.toggle('ativo');
+    }
+}
+
+function confirmarExcluirIndividuo(idx) {
+    if (confirm('Excluir este indivíduo?')) {
+        excluirIndividuo(idx);
+    }
+}
+
+// ============================================
+// PARCELAS - FORMULARIO CRIAR PARCELA
+// ============================================
+
+async function handleSalvarParcela() {
+    const form = document.getElementById('form-criar-parcela');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    const campos = {};
+    
+    inputs.forEach(input => {
+        if (input.name) {
+            campos[input.name] = input.value;
+        }
+    });
+    
+    const obrigatorios = DADOS_CONFIG_INVENTARIO.parcela.camposBasicos.filter(c => c.obrigatorio);
+    for (const campo of obrigatorios) {
+        if (!campos[campo.nome] || campos[campo.nome].trim() === '') {
+            mostrarToast(`Preencha o campo: ${campo.label}`, 'erro');
+            return;
+        }
+    }
+    
+    const posicao = App.currentPosition || App.crosshairPosition || (mapa ? { lat: mapa.getCenter().lat, lng: mapa.getCenter().lng } : null);
+    if (!posicao) {
+        mostrarToast('GPS indisponivel', 'erro');
+        return;
+    }
+    
+    // Verificar se esta editando uma parcela existente
+    if (ParcelaState.parcelaAtual && ParcelaState.parcelaAtual.id) {
+        // Editar parcela existente
+        ParcelaState.parcelaAtual.campos = campos;
+        ParcelaState.parcelaAtual.status = 'novo';
+        salvarDadosLocais();
+        
+        mostrarToast('Parcela atualizada com sucesso!', 'sucesso');
+        carregarPontosNoMapa();
+        abrirDetalheParcela(ParcelaState.parcelaAtual);
+    } else {
+        // Criar nova parcela
+        const parcela = {
+            id: 'parcela_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+            tipo: 'parcela',
+            status: 'novo',
+            latitude: posicao.lat,
+            longitude: posicao.lng,
+            dataColeta: new Date().toISOString(),
+            tecnico: App.usuario ? App.usuario.email : '',
+            campos: campos,
+            arvoreo: [],
+            arbustivo: [],
+            herbaceo: [],
+            caracterizacao: {}
+        };
+        
+        if (!App.dadosLocais['inventario']) {
+            App.dadosLocais['inventario'] = [];
+        }
+        App.dadosLocais['inventario'].push(parcela);
+        salvarDadosLocais();
+        
+        mostrarToast('Parcela criada com sucesso!', 'sucesso');
+        carregarPontosNoMapa();
+        abrirDetalheParcela(parcela);
+    }
+}
+
+// ============================================
+// PARCELAS - CARACTERIZACAO
+// ============================================
+
+function abrirFormCaracterizacao(parcela) {
+    ParcelaState.parcelaAtual = parcela;
+    
+    const fisionomia = parcela.campos.FISIONOMIA || 'FESD';
+    const configCaract = DADOS_CONFIG_INVENTARIO.parcela.caracterizacao[fisionomia];
+    
+    if (!configCaract) {
+        mostrarToast('Caracterizacao nao configurada para esta fisionomia', 'erro');
+        return;
+    }
+    
+    document.getElementById('caract-parcela-nome').textContent = 
+        parcela.campos.NOME_PARCELA || 'Parcela';
+    
+    const container = document.getElementById('campos-form-caracterizacao');
+    container.innerHTML = '';
+    
+    configCaract.forEach(campo => {
+        const div = document.createElement('div');
+        div.className = 'campo-formulario';
+        
+        const label = document.createElement('label');
+        label.textContent = campo.label;
+        if (campo.obrigatorio) {
+            label.innerHTML += ' <span class="obrigatorio">*</span>';
+        }
+        div.appendChild(label);
+        
+        let input;
+        
+        if (campo.tipo === 'lista') {
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">Selecione...</option>';
+            (campo.opcoes || []).forEach(opcao => {
+                const option = document.createElement('option');
+                option.value = opcao;
+                option.textContent = opcao;
+                input.appendChild(option);
+            });
+        } else if (campo.tipo === 'textarea') {
+            input = document.createElement('textarea');
+            input.placeholder = campo.placeholder || 'Digite...';
+        } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = campo.placeholder || '';
+        }
+        
+        input.name = campo.nome;
+        input.required = campo.obrigatorio;
+        
+        if (parcela.caracterizacao && parcela.caracterizacao[campo.nome]) {
+            input.value = parcela.caracterizacao[campo.nome];
+        }
+        
+        div.appendChild(input);
+        container.appendChild(div);
+    });
+    
+    mostrarTela('tela-form-caracterizacao');
+}
+
+function handleSalvarCaracterizacao() {
+    if (!ParcelaState.parcelaAtual) return;
+    
+    const form = document.getElementById('form-caracterizacao');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    const dados = {};
+    
+    inputs.forEach(input => {
+        if (input.name) {
+            dados[input.name] = input.value;
+        }
+    });
+    
+    ParcelaState.parcelaAtual.caracterizacao = dados;
+    
+    if (ParcelaState.parcelaAtual.status !== 'novo') {
+        ParcelaState.parcelaAtual.status = 'novo';
+    }
+    
+    salvarDadosLocais();
+    mostrarToast('Caracterização salva!', 'sucesso');
+    history.back();
+}
+
+// ============================================
+// PARCELAS - FORMULARIO INDIVIDUO
+// ============================================
+
+function abrirFormIndividuo(individuo, estrato, fisionomia) {
+    ParcelaState.estratoAtual = estrato;
+    // individuoEditando ja foi definido por editarIndividuo ou deve ser null para novo
+    
+    const nomes = { arvoreo: 'Arbóreo', arbustivo: 'Arbustivo', herbaceo: 'Herbáceo' };
+    
+    if (individuo) {
+        document.getElementById('form-individuo-titulo').textContent = 'Editar Indivíduo';
+        document.getElementById('form-individuo-estrato').textContent = nomes[estrato] || estrato;
+    } else {
+        document.getElementById('form-individuo-titulo').textContent = 'Novo Indivíduo';
+        document.getElementById('form-individuo-estrato').textContent = nomes[estrato] || estrato;
+    }
+    
+    const container = document.getElementById('campos-form-individuo');
+    container.innerHTML = '';
+    
+    const configEstrato = DADOS_CONFIG_INVENTARIO.parcela[estrato];
+    if (!configEstrato) return;
+    
+    let campos = [...configEstrato.campos];
+    
+    if (configEstrato.copaObrigatoria && configEstrato.copaObrigatoria.includes(fisionomia)) {
+        campos = [...campos, ...configEstrato.camposCopa];
+    }
+    
+    if (estrato === 'herbaceo' && configEstrato.coberturaObrigatoria && configEstrato.coberturaObrigatoria.includes(fisionomia)) {
+        campos = [...campos, ...configEstrato.camposCobertura];
+    }
+    
+    const temFusteGrupo = campos.some(c => c.tipo === 'fuste_grupo');
+    const camposFuste = campos.filter(c => c.tipo === 'fuste_campo');
+    let fusteInserido = false;
+    
+    campos.forEach(campo => {
+        if (campo.tipo === 'fuste_campo') return;
+        
+        if (campo.tipo === 'fuste_grupo' && temFusteGrupo) {
+            const divWrapper = document.createElement('div');
+            divWrapper.className = 'fuste-secao';
+            
+            const dadosFustes = (individuo && individuo.fustes) ? individuo.fustes : [];
+            if (dadosFustes.length === 0) {
+                dadosFustes.push({ numero: 1, de: 1 });
+            }
+            
+            const header = document.createElement('div');
+            header.className = 'fuste-header';
+            header.innerHTML = `<span class="fuste-icone">&#128734;</span> FUSTES (<span id="fuste-count">${dadosFustes.length}</span>)`;
+            divWrapper.appendChild(header);
+            
+            const listaBlocos = document.createElement('div');
+            listaBlocos.id = 'fuste-lista-blocos';
+            listaBlocos.className = 'fuste-lista-blocos';
+            
+            dadosFustes.forEach((fusteExistente, idx) => {
+                const bloco = criarBlocoFuste(idx + 1, camposFuste, fusteExistente);
+                listaBlocos.appendChild(bloco);
+            });
+            
+            divWrapper.appendChild(listaBlocos);
+            
+            const btnAdicionar = document.createElement('button');
+            btnAdicionar.type = 'button';
+            btnAdicionar.className = 'btn-adicionar-fuste';
+            btnAdicionar.textContent = '+ Adicionar Fuste';
+            btnAdicionar.addEventListener('click', function() {
+                const blocos = listaBlocos.querySelectorAll('.fuste-bloco-novo');
+                const novoIdx = blocos.length + 1;
+                const bloco = criarBlocoFuste(novoIdx, camposFuste, null);
+                listaBlocos.appendChild(bloco);
+                document.getElementById('fuste-count').textContent = blocos.length + 1;
+            });
+            divWrapper.appendChild(btnAdicionar);
+            
+            container.appendChild(divWrapper);
+            fusteInserido = true;
+            return;
+        }
+        
+        const div = document.createElement('div');
+        div.className = 'campo-formulario';
+        
+        const label = document.createElement('label');
+        label.textContent = campo.label;
+        if (campo.obrigatorio) {
+            label.innerHTML += ' <span class="obrigatorio">*</span>';
+        }
+        div.appendChild(label);
+        
+        let input;
+        
+        if (campo.tipo === 'lista') {
+            input = document.createElement('select');
+            input.innerHTML = '<option value="">Selecione...</option>';
+            (campo.opcoes || []).forEach(opcao => {
+                const option = document.createElement('option');
+                option.value = opcao;
+                option.textContent = opcao;
+                input.appendChild(option);
+            });
+        } else if (campo.tipo === 'textarea') {
+            input = document.createElement('textarea');
+            input.placeholder = campo.placeholder || 'Digite...';
+        } else if (campo.tipo === 'numero') {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.placeholder = `Digite ${campo.label.toLowerCase()}...`;
+        } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = campo.placeholder || `Digite ${campo.label.toLowerCase()}...`;
+        }
+        
+        input.name = campo.nome;
+        input.required = campo.obrigatorio;
+        
+        if (individuo && individuo[campo.nome]) {
+            input.value = individuo[campo.nome];
+        }
+        
+        div.appendChild(input);
+        container.appendChild(div);
+    });
+    
+    mostrarTela('tela-form-individuo');
+}
+
+// ============================================
+// VALIDACAO DE FUSTES POR FISIONOMIA/ESTRATO
+// ============================================
+
+function validarFustes(fustes, estrato, fisionomia) {
+    if (!fustes || fustes.length === 0) return null;
+    
+    for (const fuste of fustes) {
+        const altura = parseFloat(fuste.ALTURA);
+        const cap = parseFloat(fuste.CAP);
+        
+        if (estrato === 'arvoreo') {
+            if (fisionomia === 'FESD') {
+                if (!isNaN(altura) && altura < 2) {
+                    return `Fuste ${fuste.numero}: Altura minima para Arboreo FESD e 2m (informado: ${altura}m)`;
+                }
+                if (!isNaN(cap) && cap < 15) {
+                    return `Fuste ${fuste.numero}: CAP minimo para Arboreo FESD e 15cm (informado: ${cap}cm)`;
+                }
+            } else if (fisionomia === 'Cerrado' || fisionomia === 'Campo Rupestre') {
+                if (!isNaN(altura) && altura < 1.5) {
+                    return `Fuste ${fuste.numero}: Altura minima para Arboreo ${fisionomia} e 1,5m (informado: ${altura}m)`;
+                }
+                if (!isNaN(cap) && cap < 15) {
+                    return `Fuste ${fuste.numero}: CAP minimo para Arboreo ${fisionomia} e 15cm (informado: ${cap}cm)`;
+                }
+            }
+        } else if (estrato === 'arbustivo') {
+            if (fisionomia === 'FESD') {
+                if (!isNaN(cap) && cap >= 15) {
+                    return `Fuste ${fuste.numero}: CAP do Arbustivo FESD deve ser menor que 15cm (informado: ${cap}cm)`;
+                }
+                if (!isNaN(altura) && altura <= 1.5) {
+                    return `Fuste ${fuste.numero}: Altura do Arbustivo FESD deve ser maior que 1,5m (informado: ${altura}m)`;
+                }
+            }
+        }
+    }
+    
+    return null;
+}
+
+function handleSalvarIndividuo() {
+    if (!ParcelaState.parcelaAtual || !ParcelaState.estratoAtual) return;
+    
+    const form = document.getElementById('form-individuo');
+    const inputs = form.querySelectorAll('input, select, textarea');
+    const dados = {};
+    
+    inputs.forEach(input => {
+        if (input.name && !input.name.includes('_fuste_')) {
+            dados[input.name] = input.value;
+        }
+    });
+    
+    // Coletar dados dos fustes do novo formato
+    const blocosFustes = document.querySelectorAll('.fuste-bloco-novo');
+    if (blocosFustes.length > 0) {
+        dados.fustes = [];
+        blocosFustes.forEach((bloco, idx) => {
+            const fuste = { numero: idx + 1, de: blocosFustes.length };
+            const camposInputs = bloco.querySelectorAll('input');
+            camposInputs.forEach(campoInput => {
+                if (campoInput.name) {
+                    const nomeCampo = campoInput.name.replace(`_fuste_${idx + 1}`, '');
+                    fuste[nomeCampo] = campoInput.value;
+                }
+            });
+            dados.fustes.push(fuste);
+        });
+        dados.FUSTE = `1 de ${blocosFustes.length}`;
+    }
+    
+    // Validar regras de preenchimento por fisionomia e estrato
+    const fisionomia = ParcelaState.parcelaAtual?.campos?.FISIONOMIA || '';
+    const estrato = ParcelaState.estratoAtual;
+    const erroValidacao = validarFustes(dados.fustes, estrato, fisionomia);
+    if (erroValidacao) {
+        mostrarToast(erroValidacao, 'erro');
+        return;
+    }
+    
+    if (!ParcelaState.parcelaAtual[estrato]) {
+        ParcelaState.parcelaAtual[estrato] = [];
+    }
+    
+    if (ParcelaState.individuoEditando !== null) {
+        ParcelaState.parcelaAtual[estrato][ParcelaState.individuoEditando] = dados;
+    } else {
+        ParcelaState.parcelaAtual[estrato].push(dados);
+    }
+    
+    if (ParcelaState.parcelaAtual.status !== 'novo') {
+        ParcelaState.parcelaAtual.status = 'novo';
+    }
+    
+    salvarDadosLocais();
+    
+    const acao = ParcelaState.individuoEditando !== null ? 'atualizado' : 'adicionado';
+    mostrarToast(`Indivíduo ${acao} com sucesso!`, 'sucesso');
+    
+    ParcelaState.individuoEditando = null;
+    
+    // Voltar para lista atualizada
+    abrirListaIndividuos(estrato, fisionomia);
+}
+
+function editarIndividuo(idx) {
+    const estrato = ParcelaState.estratoAtual;
+    const individuos = ParcelaState.parcelaAtual?.[estrato] || [];
+    const individuo = individuos[idx];
+    
+    if (!individuo) return;
+    
+    const fisionomia = ParcelaState.parcelaAtual?.campos?.FISIONOMIA || 'FESD';
+    ParcelaState.individuoEditando = idx;
+    abrirFormIndividuo(individuo, estrato, fisionomia);
+}
+
+function excluirIndividuo(idx) {
+    if (!ParcelaState.parcelaAtual || !ParcelaState.estratoAtual) return;
+    
+    const estrato = ParcelaState.estratoAtual;
+    ParcelaState.parcelaAtual[estrato].splice(idx, 1);
+    
+    if (ParcelaState.parcelaAtual.status !== 'novo') {
+        ParcelaState.parcelaAtual.status = 'novo';
+    }
+    
+    salvarDadosLocais();
+    mostrarToast('Indivíduo excluído', 'info');
+    abrirListaIndividuos(estrato, ParcelaState.parcelaAtual?.campos?.FISIONOMIA || 'FESD');
+}
+
+// ============================================
+// PARCELAS - EVENT LISTENERS
+// ============================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnSalvarParcela = document.getElementById('btn-salvar-parcela');
+    if (btnSalvarParcela) {
+        btnSalvarParcela.addEventListener('click', handleSalvarParcela);
+    }
+    
+    const btnSalvarCaracterizacao = document.getElementById('btn-salvar-caracterizacao');
+    if (btnSalvarCaracterizacao) {
+        btnSalvarCaracterizacao.addEventListener('click', handleSalvarCaracterizacao);
+    }
+    
+    const btnSalvarIndividuo = document.getElementById('btn-salvar-individuo');
+    if (btnSalvarIndividuo) {
+        btnSalvarIndividuo.addEventListener('click', handleSalvarIndividuo);
+    }
+    
+    const btnVoltarMapaParcela = document.getElementById('btn-voltar-mapa-parcela');
+    if (btnVoltarMapaParcela) {
+        btnVoltarMapaParcela.addEventListener('click', () => history.back());
+    }
+    
+    const btnVoltarMapaDetalhe = document.getElementById('btn-voltar-mapa-detalhe');
+    if (btnVoltarMapaDetalhe) {
+        btnVoltarMapaDetalhe.addEventListener('click', () => history.back());
+    }
+    
+    const btnVoltarDetalhe = document.getElementById('btn-voltar-detalhe');
+    if (btnVoltarDetalhe) {
+        btnVoltarDetalhe.addEventListener('click', () => history.back());
+    }
+    
+    const btnVoltarLista = document.getElementById('btn-voltar-lista');
+    if (btnVoltarLista) {
+        btnVoltarLista.addEventListener('click', () => history.back());
+    }
+    
+    const btnVoltarDetalheCaract = document.getElementById('btn-voltar-detalhe-caract');
+    if (btnVoltarDetalheCaract) {
+        btnVoltarDetalheCaract.addEventListener('click', () => history.back());
+    }
 });

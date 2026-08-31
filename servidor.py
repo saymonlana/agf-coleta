@@ -61,12 +61,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             token = self.headers.get('X-Token', '')
             folder_id = self.headers.get('X-Folder-Id', '')
             file_id = self.headers.get('X-File-Id', '') or None
+            file_name = self.headers.get('X-File-Name', '') or 'Planilha Dados Aplicativo.xlsx'
             
             if not token:
                 self.send_json(400, {'error': 'Token nao fornecido'})
                 return
-            
-            file_name = 'Planilha Dados Aplicativo.xlsx'
             
             if not file_id:
                 try:

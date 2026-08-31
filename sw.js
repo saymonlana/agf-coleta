@@ -3,7 +3,7 @@
    Funciona offline após primeiro acesso
    ============================================ */
 
-const CACHE_NAME = 'agf-coleta-v53';
+const CACHE_NAME = 'agf-coleta-v54';
 const urlsToCache = [
     './',
     './index.html',
@@ -82,57 +82,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
     
-    const isLocalFile = url.hostname === location.hostname && (
-        url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || 
-        url.pathname.endsWith('.css') || url.pathname === '/' || url.pathname === './'
-    );
-    
-    if (isLocalFile) {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
-                    if (response && response.status === 200) {
-                        const responseToCache = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-                    }
-                    return response;
-                })
-                .catch(() => {
-                    return caches.match(event.request);
-                })
-        );
-        return;
-    }
-    
-    event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                if (response) {
-                    return response;
-                }
-                
-                return fetch(event.request)
-                    .then((response) => {
-                        if (!response || response.status !== 200 || response.type !== 'basic') {
-                            return response;
-                        }
-                        
-                        const responseToCache = response.clone();
-                        caches.open(CACHE_NAME).then((cache) => {
-                            cache.put(event.request, responseToCache);
-                        });
-                        
-                        return response;
-                    })
-                    .catch(() => {
-                        if (event.request.destination === 'document') {
-                            return caches.match('./index.html');
-                        }
-                    });
-            })
-    );
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });
 
 // ============================================

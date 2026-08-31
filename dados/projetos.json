@@ -10,7 +10,8 @@
         "Moradores_PAEBM_SAG",
         "Animais_Domesticos_PAEBM_SAG",
         "Animais_Silvestres_Exoticos_PAEBM_SAG",
-        "Producao_Agropecuaria_PAEBM_SAG"
+        "Producao_Agropecuaria_PAEBM_SAG",
+        "Questionario_FAUNA_ERRANTE_CMD"
       ]
     }
   ]
