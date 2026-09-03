@@ -107,6 +107,11 @@ function inicializarMapa(lat, lng) {
                 .openPopup();
             
             mostrarToast('Ponto marcado! Preencha o formulario.', 'sucesso');
+            
+            // Atualizar campos de coordenadas no formulario
+            if (typeof atualizarCamposCoordenadas === 'function') {
+                atualizarCamposCoordenadas(e.latlng.lat, e.latlng.lng);
+            }
         }
     });
     
@@ -390,11 +395,22 @@ function carregarPontosNoMapa() {
     // Contadores sequenciais por camada
     const contadoresPorCamada = {};
     
-    // Carregar dados do Box
-    const dadosBox = App.dadosBox[App.projetoAtual] || [];
+    // Verificar se é CMD (Fauna Errante)
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    const camadaFiltro = isCmd ? 'Questionario_FAUNA_ERRANTE_CMD' : null;
+    
+    // Carregar dados do Box (CMD usa chave separada 'cmd')
+    const chaveBox = isCmd ? 'cmd' : App.projetoAtual;
+    const dadosBox = App.dadosBox[chaveBox] || [];
     
     // Adicionar cada feature no mapa
     dadosBox.forEach(feature => {
+        // Filtrar por camada se for CMD
+        if (camadaFiltro) {
+            const camadaFeature = feature._camada || feature.properties?._camada || '';
+            if (camadaFeature !== camadaFiltro) return;
+        }
+        
         if (feature.geometry && feature.geometry.coordinates) {
             const coords = feature.geometry.coordinates;
             let lat, lng;
@@ -437,6 +453,14 @@ function carregarPontosNoMapa() {
     // Tambem carregar dados locais (coletados pelo usuario)
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
     dadosLocais.forEach(dado => {
+        // Filtrar por camada se for CMD
+        if (camadaFiltro) {
+            const camadaDado = dado.camada || '';
+            if (camadaDado && camadaDado !== camadaFiltro) return;
+            // Se ja foi sincronizado e tem dados no Box, pular (evitar duplicata)
+            if (dado.status === 'sincronizado' && dadosBox.length > 0) return;
+        }
+        
         if (dado.latitude && dado.longitude) {
             // Obter camada e incrementar contador
             const camada = dado.camada || 'default';

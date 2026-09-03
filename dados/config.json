@@ -1160,9 +1160,15 @@
             "ZAS",
             "ZSS"
           ]
+        },
+        {
+          "nome": "TECNICO",
+          "label": "Tecnico",
+          "tipo": "texto",
+          "obrigatorio": false
         }
       ],
-      "total_campos": 16,
+      "total_campos": 17,
       "geometria": "Point",
       "src": "EPSG:4326"
     }

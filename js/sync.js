@@ -757,8 +757,152 @@ const InventarioSync = {
 const CmdSync = {
     folder_id: '413710880404',
     excel_file_id: null,
-    kml_file_id: null
+    kml_file_id: null,
+    file_ids: {}
 };
+
+const CMD_EXCEL_API_URL = (location.protocol === 'file:' || location.hostname === '')
+    ? 'https://agf-coleta.onrender.com/upload-excel'
+    : '/upload-excel';
+
+function salvarCacheCmdFileIds(fileIds) {
+    try {
+        localStorage.setItem('agf_cmd_file_ids', JSON.stringify({
+            file_ids: fileIds,
+            timestamp: Date.now()
+        }));
+    } catch (e) {}
+}
+
+function carregarCacheCmdFileIds() {
+    try {
+        const raw = localStorage.getItem('agf_cmd_file_ids');
+        if (!raw) return null;
+        const cache = JSON.parse(raw);
+        const idadeMin = (Date.now() - cache.timestamp) / (1000 * 60);
+        if (idadeMin > 30) return null;
+        return cache.file_ids;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function listarGeoJSONCmd() {
+    if (!await verificarToken()) return [];
+    
+    const cacheIds = carregarCacheCmdFileIds();
+    if (cacheIds && Object.keys(cacheIds).length > 0) {
+        CmdSync.file_ids = cacheIds;
+        console.log('CmdSync.file_ids carregado do cache:', Object.keys(cacheIds));
+        return Object.values(cacheIds);
+    }
+    
+    try {
+        const data = await boxFetch(
+            `https://api.box.com/2.0/folders/${CmdSync.folder_id}/items?limit=1000&fields=name,id,size,extension`,
+            { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+        );
+        CmdSync.file_ids = {};
+        (data.entries || []).forEach(item => {
+            if (item.type === 'file') {
+                if ((item.name.endsWith('.geojson') || item.name.endsWith('.json')) && item.name !== 'schemas.json') {
+                    const nome = item.name.replace('.geojson', '').replace('.json', '');
+                    CmdSync.file_ids[nome] = item.id;
+                }
+            }
+        });
+        salvarCacheCmdFileIds(CmdSync.file_ids);
+        return data.entries || [];
+    } catch (e) {
+        console.error('Erro ao listar GeoJSON CMD:', e);
+        return [];
+    }
+}
+
+async function baixarGeoJSONCmd(nomeArquivo) {
+    if (!await verificarToken()) return null;
+    
+    if (!CmdSync.file_ids[nomeArquivo]) {
+        await listarGeoJSONCmd();
+    }
+    
+    const fileId = CmdSync.file_ids[nomeArquivo];
+    if (!fileId) {
+        console.log('Arquivo CMD nao encontrado:', nomeArquivo);
+        return null;
+    }
+    
+    try {
+        const resp = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: `https://api.box.com/2.0/files/${fileId}/content`,
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + Sync.access_token }
+            })
+        });
+        
+        const text = await resp.text();
+        if (!resp.ok) {
+            console.error('Box retornou erro CMD:', resp.status, text.substring(0, 200));
+            return null;
+        }
+        
+        try {
+            const data = JSON.parse(text);
+            return data;
+        } catch(parseErr) {
+            console.error('Resposta nao e JSON CMD:', text.substring(0, 100));
+            return null;
+        }
+    } catch (e) {
+        console.error('Erro ao baixar GeoJSON CMD:', e);
+        return null;
+    }
+}
+
+async function salvarGeoJSONCmd(nomeArquivo, dados) {
+    if (!await verificarToken()) return null;
+    
+    const fileId = CmdSync.file_ids[nomeArquivo];
+    const nomeCompleto = nomeArquivo.endsWith('.geojson') ? nomeArquivo : nomeArquivo + '.geojson';
+    const conteudo = JSON.stringify(dados, null, 2);
+    const attributes = { name: nomeCompleto, parent: { id: CmdSync.folder_id } };
+    
+    const url = fileId
+        ? `https://upload.box.com/api/2.0/files/${fileId}/content`
+        : 'https://upload.box.com/api/2.0/files/content';
+    
+    try {
+        const base64 = btoa(unescape(encodeURIComponent(conteudo)));
+        
+        const resp = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: url,
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + Sync.access_token },
+                upload: true,
+                attributes: JSON.stringify(attributes),
+                fileBase64: base64,
+                fileName: nomeCompleto
+            })
+        });
+        
+        const result = await resp.json();
+        if (result.entries) {
+            CmdSync.file_ids[nomeArquivo] = result.entries[0].id;
+            salvarCacheCmdFileIds(CmdSync.file_ids);
+            console.log('GeoJSON CMD salvo:', nomeCompleto);
+        }
+        return result;
+    } catch (e) {
+        console.error('Erro ao salvar GeoJSON CMD:', e);
+        return null;
+    }
+}
 
 async function listarGeoJSONInventario() {
     if (!await verificarToken()) return [];
@@ -1572,7 +1716,7 @@ async function sincronizarCmd() {
         }
         
         titulo.textContent = 'Preparando dados...';
-        status.textContent = 'Identificando dados novos...';
+        status.textContent = 'Identificando dados para planilha...';
         progress.style.width = '20%';
         
         const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
@@ -1587,23 +1731,69 @@ async function sincronizarCmd() {
         }
         
         titulo.textContent = 'Gerando planilha Excel...';
-        status.textContent = `Criando planilha com ${dadosNovos.length} pontos...`;
+        status.textContent = `Criando planilha com ${dadosLocais.length} pontos...`;
         progress.style.width = '30%';
         
-        await gerarESalvarExcelCmd(dadosNovos);
+        await gerarESalvarExcelCmd(dadosLocais);
         
         titulo.textContent = 'Gerando KML...';
-        status.textContent = `Criando KML com ${dadosNovos.length} pontos...`;
+        status.textContent = `Criando KML com ${dadosLocais.length} pontos...`;
         progress.style.width = '60%';
         
-        await gerarESalvarKmlCmd(dadosNovos);
+        await gerarESalvarKmlCmd(dadosLocais);
+        
+        // Salvar GeoJSON no Box
+        titulo.textContent = 'Salvando GeoJSON...';
+        status.textContent = 'Salvando dados geograficos...';
+        progress.style.width = '70%';
+        
+        const geojsonData = {
+            type: 'FeatureCollection',
+            features: dadosLocais.map(dado => ({
+                type: 'Feature',
+                _camada: 'Questionario_FAUNA_ERRANTE_CMD',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [dado.longitude, dado.latitude]
+                },
+                properties: {
+                    ...dado.campos,
+                    _id: dado.id,
+                    _camada: 'Questionario_FAUNA_ERRANTE_CMD',
+                    _tecnico: dado.tecnico,
+                    _data_coleta: dado.dataColeta
+                }
+            }))
+        };
+        await salvarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD', geojsonData);
+        
+        // Enviar fotos para o Box
+        const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
+        if (fotosParaEnviar.length > 0) {
+            titulo.textContent = 'Enviando fotos...';
+            status.textContent = `Enviando ${fotosParaEnviar.length} fotos...`;
+            progress.style.width = '75%';
+            
+            for (const dado of fotosParaEnviar) {
+                const nomePonto = dado.campos.PONTO;
+                const extensao = dado.foto.split(';')[0].split('/')[1] || 'jpg';
+                const nomeArquivo = `${nomePonto}.${extensao}`;
+                
+                try {
+                    await enviarFotoParaBox(dado.foto, nomePonto, nomeArquivo);
+                    console.log(`Foto enviada: ${nomeArquivo}`);
+                } catch (erroFoto) {
+                    console.error(`Erro ao enviar foto ${nomeArquivo}:`, erroFoto);
+                }
+            }
+        }
         
         titulo.textContent = 'Finalizando...';
         status.textContent = 'Atualizando status local...';
         progress.style.width = '90%';
         
         const agora = new Date();
-        dadosNovos.forEach(dado => {
+        dadosLocais.forEach(dado => {
             dado.status = 'sincronizado';
             dado.syncEm = agora.toISOString();
             if (typeof FilaSync !== 'undefined') {
@@ -1614,13 +1804,16 @@ async function sincronizarCmd() {
         salvarDadosLocais();
         
         titulo.textContent = 'Sincronizacao concluida!';
-        status.textContent = `${dadosNovos.length} pontos enviados + Excel + KML`;
+        status.textContent = `${dadosLocais.length} pontos enviados + Excel + KML + GeoJSON`;
         progress.style.width = '100%';
         btnFechar.style.display = 'block';
         
+        // Atualizar dadosBox['cmd'] com os dados que foram enviados
+        App.dadosBox['cmd'] = geojsonData.features;
+        
         atualizarContadorPontos();
         carregarPontosNoMapa();
-        mostrarToast(`${dadosNovos.length} pontos sincronizados!`, 'sucesso');
+        mostrarToast(`${dadosLocais.length} pontos sincronizados!`, 'sucesso');
         
     } catch (error) {
         console.error('Erro na sincronizacao CMD:', error);
@@ -1631,6 +1824,72 @@ async function sincronizarCmd() {
         btnFechar.style.display = 'block';
         mostrarToast('Erro ao sincronizar: ' + error.message, 'erro');
     }
+}
+
+function arrayBufferToBase64(buffer) {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
+    const FOTOS_FOLDER_ID = '414345486296';
+    
+    // Converter base64 para bytes
+    const base64Data = fotoBase64.split(',')[1];
+    const bytes = atob(base64Data);
+    const byteArray = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) {
+        byteArray[i] = bytes.charCodeAt(i);
+    }
+    
+    // Montar multipart/form-data
+    const boundary = '----FormBoundary' + Math.random().toString(36).substring(2);
+    const attributes = JSON.stringify({
+        name: nomeArquivo,
+        parent: { id: FOTOS_FOLDER_ID }
+    });
+    
+    let body = '';
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="attributes"\r\n\r\n`;
+    body += `${attributes}\r\n`;
+    body += `--${boundary}\r\n`;
+    body += `Content-Disposition: form-data; name="file"; filename="${nomeArquivo}"\r\n`;
+    body += `Content-Type: image/jpeg\r\n\r\n`;
+    
+    const bodyStart = new TextEncoder().encode(body);
+    const bodyEnd = new TextEncoder().encode(`\r\n--${boundary}--\r\n`);
+    
+    const fullBody = new Uint8Array(bodyStart.length + byteArray.length + bodyEnd.length);
+    fullBody.set(bodyStart, 0);
+    fullBody.set(byteArray, bodyStart.length);
+    fullBody.set(bodyEnd, bodyStart.length + byteArray.length);
+    
+    // Usar proxy para evitar CORS
+    const resp = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            url: 'https://upload.box.com/api/2.0/files/content',
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + Sync.access_token },
+            upload: true,
+            attributes: attributes,
+            fileBase64: base64Data,
+            fileName: nomeArquivo
+        })
+    });
+    
+    if (!resp.ok) {
+        const erro = await resp.text();
+        throw new Error(`Erro ao enviar foto: ${erro}`);
+    }
+    
+    return await resp.json();
 }
 
 async function gerarESalvarExcelCmd(dadosNovos) {
@@ -1663,9 +1922,9 @@ async function gerarESalvarExcelCmd(dadosNovos) {
     
     const fileName = 'Questionario_FAUNA_ERRANTE_CMD.xlsx';
     
-    const fileId = await buscarArquivoExistente(CmdSync.folder_id, fileName);
+    const fileId = CmdSync.excel_file_id || await buscarArquivoExistente(CmdSync.folder_id, fileName);
     
-    const resp = await fetch(EXCEL_API_URL, {
+    const resp = await fetch(CMD_EXCEL_API_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

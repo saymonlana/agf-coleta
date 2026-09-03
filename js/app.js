@@ -119,8 +119,9 @@ async function carregarDadosBox() {
         
         // 4. Carregar dados do Questionario (variavel global DADOS_QUESTIONARIO)
         if (typeof DADOS_QUESTIONARIO !== 'undefined') {
-            App.dadosBox['paebm'] = DADOS_QUESTIONARIO.features || [];
-            console.log(`  Questionario: ${App.dadosBox['paebm'].length} registros`);
+            App.dadosBox['paebm_sag'] = DADOS_QUESTIONARIO.features || [];
+            App.dadosBox['paebm'] = App.dadosBox['paebm_sag'];
+            console.log(`  Questionario: ${App.dadosBox['paebm_sag'].length} registros`);
         }
         
         // 5. Carregar complementos
@@ -181,6 +182,53 @@ function carregarCacheInventario() {
 
 function limparCacheInventario() {
     localStorage.removeItem('agf_inventario_cache');
+}
+
+// ============================================
+// CACHE DO CMD (localStorage)
+// ============================================
+
+function salvarCacheCmd(dados) {
+    try {
+        const cache = {
+            dados: dados,
+            timestamp: Date.now()
+        };
+        localStorage.setItem('agf_cmd_cache', JSON.stringify(cache));
+        console.log('Cache CMD salvo:', dados.length, 'registros');
+    } catch (e) {
+        console.error('Erro ao salvar cache CMD:', e);
+    }
+}
+
+function carregarCacheCmd() {
+    try {
+        const raw = localStorage.getItem('agf_cmd_cache');
+        if (!raw) return null;
+        
+        const cache = JSON.parse(raw);
+        const idadeHoras = (Date.now() - cache.timestamp) / (1000 * 60 * 60);
+        console.log('Cache CMD encontrado:', cache.dados.length, 'registros,', idadeHoras.toFixed(1), 'horas atras');
+        
+        return cache.dados;
+    } catch (e) {
+        console.error('Erro ao carregar cache CMD:', e);
+        return null;
+    }
+}
+
+function carregarCacheCmdTimestamp() {
+    try {
+        const raw = localStorage.getItem('agf_cmd_cache');
+        if (!raw) return null;
+        return JSON.parse(raw).timestamp || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function limparCacheCmd() {
+    localStorage.removeItem('agf_cmd_cache');
 }
 
 // ============================================
@@ -283,6 +331,89 @@ async function carregarInventarioDoBox() {
 }
 
 // ============================================
+// CARREGAR CMD DO BOX
+// ============================================
+
+async function carregarCmdDoBox() {
+    console.log('Iniciando carregamento CMD do Box...');
+    
+    const cache = carregarCacheCmd();
+    const cacheTimestamp = carregarCacheCmdTimestamp();
+    const cacheRecente = cacheTimestamp && (Date.now() - cacheTimestamp) < (60 * 60 * 1000);
+    
+    if (cache && cache.length > 0) {
+        App.dadosBox['cmd'] = cache;
+        console.log('CMD carregado do cache:', cache.length, 'registros');
+        if (mapa && App.projetoAtual === 'paebm') {
+            carregarPontosNoMapa();
+            atualizarContadorPontos();
+        }
+        if (cacheRecente) {
+            console.log('Cache recente (<1h), pulando download do Box');
+            return;
+        }
+        mostrarToast(`Atualizando dados do Box...`, 'info');
+    }
+    
+    try {
+        await _sincronizarCmdDoBox(cache);
+    } catch (e) {
+        console.error('Erro ao carregar CMD do Box:', e);
+        if (!cache || cache.length === 0) {
+            mostrarToast('Erro ao carregar CMD do Box', 'erro');
+        }
+    }
+}
+
+async function _sincronizarCmdDoBox(cache) {
+    if (!await verificarToken()) {
+        console.log('Sem token Box, usando cache');
+        return;
+    }
+    
+    await listarGeoJSONCmd();
+    
+    const arquivos = Object.keys(CmdSync.file_ids);
+    console.log('Arquivos CMD GeoJSON:', arquivos);
+    
+    if (arquivos.length === 0) {
+        console.log('Nenhum GeoJSON CMD encontrado no Box');
+        return;
+    }
+    
+    const novosDados = [];
+    const resultados = await Promise.all(arquivos.map(nome => baixarGeoJSONCmd(nome)));
+    
+    resultados.forEach((geojson, i) => {
+        if (geojson && geojson.features) {
+            geojson.features.forEach(f => {
+                f._camada = 'Questionario_FAUNA_ERRANTE_CMD';
+                novosDados.push(f);
+            });
+            console.log(`  ${arquivos[i]}: ${geojson.features.length} registros`);
+        }
+    });
+    
+    if (novosDados.length === 0) return;
+    
+    App.dadosBox['cmd'] = novosDados;
+    salvarCacheCmd(novosDados);
+    
+    console.log(`Total CMD do Box: ${novosDados.length} registros`);
+    
+    if (mapa && App.projetoAtual === 'paebm') {
+        carregarPontosNoMapa();
+        atualizarContadorPontos();
+    }
+    
+    if (cache && cache.length !== novosDados.length) {
+        mostrarToast(`${novosDados.length} registros CMD atualizados do Box`, 'sucesso');
+    } else if (!cache || cache.length === 0) {
+        mostrarToast(`${novosDados.length} registros CMD carregados do Box`, 'sucesso');
+    }
+}
+
+// ============================================
 // ATUALIZAR LISTA DE PROJETOS
 // ============================================
 
@@ -340,7 +471,15 @@ function configurarEventListeners() {
     try { document.getElementById('btn-salvar').addEventListener('click', handleSalvar); } catch(e) {}
     
     // Botao voltar do mapa (coleta -> mapa)
-    try { document.getElementById('btn-voltar-mapa').addEventListener('click', () => { restaurarTituloProjeto(); mostrarTela('tela-mapa', false); }); } catch(e) {}
+    try { document.getElementById('btn-voltar-mapa').addEventListener('click', () => { 
+        // Restaurar projeto anterior se estava editando
+        if (AppEditando && AppEditando.projetoAnterior) {
+            App.projetoAtual = AppEditando.projetoAnterior;
+            App.projetoClienteAtual = AppEditando.projetoClienteAnterior;
+        }
+        restaurarTituloProjeto(); 
+        mostrarTela('tela-mapa', false); 
+    }); } catch(e) {}
     
     // Botao sync
     try { document.getElementById('btn-sync').addEventListener('click', handleSync); } catch(e) {}
@@ -367,9 +506,11 @@ function configurarEventListeners() {
     
     // Botao foto
     try { document.getElementById('btn-tirar-foto').addEventListener('click', () => { document.getElementById('input-foto').click(); }); } catch(e) {}
+    try { document.getElementById('btn-galeria').addEventListener('click', () => { document.getElementById('input-galeria').click(); }); } catch(e) {}
     
     // Input foto
     try { document.getElementById('input-foto').addEventListener('change', handleFoto); } catch(e) {}
+    try { document.getElementById('input-galeria').addEventListener('change', handleFoto); } catch(e) {}
     
     // Modal sync
     try { document.getElementById('btn-fechar-sync').addEventListener('click', () => { document.getElementById('modal-sync').classList.remove('ativo'); }); } catch(e) {}
@@ -722,6 +863,8 @@ async function abrirProjeto(projetoId) {
     if (projetoId === 'inventario') {
         carregarInventarioDoBox();
         carregarCamadasInventario();
+    } else if (isCmd) {
+        carregarCmdDoBox();
     } else {
         removerCamadasInventario();
     }
@@ -732,23 +875,39 @@ async function abrirProjeto(projetoId) {
 
 function restaurarTituloProjeto() {
     const projeto = App.projetos.find(p => p.id === App.projetoAtual);
-    const nomeProjeto = projeto ? projeto.nome : 'Projeto';
+    const nomeProjeto = App.projetoClienteAtual ? App.projetoClienteAtual.nome : (projeto ? projeto.nome : 'Projeto');
     document.getElementById('titulo-projeto').textContent = nomeProjeto;
 }
 
 function atualizarContadorPontos() {
-    const dadosBox = App.dadosBox[App.projetoAtual] || [];
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    const camadaFiltro = isCmd ? 'Questionario_FAUNA_ERRANTE_CMD' : null;
+    
+    const chaveBox = isCmd ? 'cmd' : App.projetoAtual;
+    const dadosBox = App.dadosBox[chaveBox] || [];
     const totalBox = dadosBox.length;
     
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
-    const novos = dadosLocais.filter(d => d.status === 'novo').length;
+    
+    // Para CMD: total = Box + locais novos (evita duplicar com sincronizados)
+    // Para SAG: total = Box + todos locais
+    const dadosLocaisNovos = camadaFiltro 
+        ? dadosLocais.filter(d => (!d.camada || d.camada === camadaFiltro) && d.status === 'novo')
+        : dadosLocais.filter(d => d.status === 'novo');
+    
+    const totalLocal = camadaFiltro 
+        ? dadosLocaisNovos.length
+        : dadosLocais.length;
+    
+    const totalLocalPendentes = dadosLocaisNovos.length;
     
     const dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
     const editadosBox = dadosEditados.length;
     
-    const totalPendentes = novos + editadosBox;
+    const totalPendentes = totalLocalPendentes + editadosBox;
+    const totalRegistros = totalBox + totalLocal;
     
-    let texto = `${totalBox} registros`;
+    let texto = `${totalRegistros} registros`;
     if (totalPendentes > 0) {
         texto += ` | ${totalPendentes} pendente(s)`;
     }
@@ -917,41 +1076,62 @@ function gerarCamposFormulario() {
         } else if (campo.tipo === 'data') {
             input = document.createElement('input');
             input.type = 'date';
+            // Preencher data automaticamente
+            if (campo.nome === 'DATA_REGISTRO') {
+                input.value = new Date().toISOString().split('T')[0];
+            }
+        } else if (campo.tipo === 'hora') {
+            input = document.createElement('input');
+            input.type = 'time';
+            // Preencher hora automaticamente
+            if (campo.nome === 'HORA_REGISTRO') {
+                const agora = new Date();
+                input.value = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
+            }
         } else {
             input = document.createElement('input');
             input.type = 'text';
             input.placeholder = `Digite ${campo.label.toLowerCase()}...`;
+            
+            // Preencher coordenadas automaticamente
+            const posicao = App.currentPosition || App.crosshairPosition;
+            if (posicao) {
+                if (campo.nome === 'E_UTC') {
+                    const utm = wgs84ParaUtm(posicao.lng, posicao.lat);
+                    input.value = utm.x;
+                } else if (campo.nome === 'N_UTC') {
+                    const utm = wgs84ParaUtm(posicao.lng, posicao.lat);
+                    input.value = utm.y;
+                } else if (campo.nome === 'LATITUDE') {
+                    input.value = posicao.lat.toFixed(6);
+                } else if (campo.nome === 'LONGITUDE') {
+                    input.value = posicao.lng.toFixed(6);
+                }
+            }
+            
+            // Bloquear campos de coordenadas
+            if (['E_UTC', 'N_UTC', 'LATITUDE', 'LONGITUDE'].includes(campo.nome)) {
+                input.readOnly = true;
+                input.style.backgroundColor = '#f0f0f0';
+                input.style.cursor = 'not-allowed';
+            }
         }
         
         input.name = campo.nome;
         input.required = campo.obrigatorio;
+        
+        // Preencher tecnico automaticamente e bloquear
+        if (campo.nome === 'TECNICO' && App.usuario) {
+            input.value = App.usuario.email;
+            input.readOnly = true;
+            input.style.backgroundColor = '#f0f0f0';
+            input.style.cursor = 'not-allowed';
+        }
+        
         div.appendChild(input);
         
         container.appendChild(div);
     });
-    
-    // Adicionar botoes para complementos
-    const divComplementos = document.createElement('div');
-    divComplementos.className = 'complementos-section';
-    divComplementos.innerHTML = `
-        <h3>Complementos (opcional)</h3>
-        <div class="botoes-complementos">
-            <button type="button" class="btn-complemento" onclick="abrirComplemento('moradores')">
-                + Morador
-            </button>
-            <button type="button" class="btn-complemento" onclick="abrirComplemento('animais_domesticos')">
-                + Animal Domestico
-            </button>
-            <button type="button" class="btn-complemento" onclick="abrirComplemento('animais_silvestres')">
-                + Animal Silvestre
-            </button>
-            <button type="button" class="btn-complemento" onclick="abrirComplemento('producao')">
-                + Producao
-            </button>
-        </div>
-        <div id="lista-complementos"></div>
-    `;
-    container.appendChild(divComplementos);
 }
 
 // ============================================
@@ -1297,17 +1477,36 @@ let AppEditando = {
 };
 
 function editarPontoLocal(id) {
-    const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
-    const ponto = dadosLocais.find(d => d.id === id);
+    // Buscar em todos os projetos
+    let ponto = null;
+    let projetoEncontrado = null;
+    
+    for (const projeto of Object.keys(App.dadosLocais)) {
+        const encontrado = App.dadosLocais[projeto].find(d => d.id === id);
+        if (encontrado) {
+            ponto = encontrado;
+            projetoEncontrado = projeto;
+            break;
+        }
+    }
     
     if (!ponto) {
         mostrarToast('Ponto nao encontrado', 'erro');
         return;
     }
     
-    AppEditando = { id: id, origem: 'local', camada: ponto.camada };
+    AppEditando = { id: id, origem: 'local', camada: ponto.camada, projetoAnterior: App.projetoAtual, projetoClienteAnterior: App.projetoClienteAtual };
     
-    App.projetoAtual = 'inventario';
+    App.projetoAtual = projetoEncontrado;
+    
+    // Se o ponto e do CMD, configurar projetoClienteAtual
+    if (ponto.camada === 'Questionario_FAUNA_ERRANTE_CMD' || (!ponto.camada && App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2')) {
+        App.projetoClienteAtual = { id: 'anglo_projeto2', nome: '2348 PAEBM - CMD' };
+        if (!ponto.camada) ponto.camada = 'Questionario_FAUNA_ERRANTE_CMD';
+    } else {
+        App.projetoClienteAtual = null;
+    }
+    
     CamadasConfig.camadaAtiva = ponto.camada;
     
     document.getElementById('titulo-projeto').textContent = 'Editar Ponto';
@@ -1684,6 +1883,11 @@ function handleSalvar() {
         }
     }
     
+    // Para CMD, adicionar camada do questionário
+    if (isCmd) {
+        dados.camada = 'Questionario_FAUNA_ERRANTE_CMD';
+    }
+    
     // Preencher campos
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
@@ -1711,6 +1915,12 @@ function handleSalvar() {
                 dados.campos.fustes.push(fuste);
             }
         }
+    }
+    
+    // Salvar foto se existir
+    if (App.fotoAtual) {
+        dados.foto = App.fotoAtual;
+        App.fotoAtual = null;
     }
     
     // Salvar localmente
@@ -1811,6 +2021,8 @@ function handleFoto(e) {
         reader.onload = function(event) {
             document.getElementById('preview-foto').innerHTML = 
                 `<img src="${event.target.result}" alt="Foto capturada">`;
+            // Salvar base64 da foto nos dados
+            App.fotoAtual = event.target.result;
         };
         reader.readAsDataURL(file);
     }
@@ -1855,7 +2067,42 @@ window.onPositionFromAndroid = function(lat, lng, accuracy) {
     if (mapa) {
         adicionarMarcadorPosicao(App.currentPosition);
     }
+    
+    // Atualizar campos de coordenadas se estiverem vazios
+    atualizarCamposCoordenadas(lat, lng);
 };
+
+// Atualizar campos de coordenadas automaticamente
+function atualizarCamposCoordenadas(lat, lng) {
+    const form = document.getElementById('form-coleta');
+    if (!form) return;
+    
+    const utm = wgs84ParaUtm(lng, lat);
+    
+    // Atualizar E_UTC
+    const campoE = form.querySelector('input[name="E_UTC"]');
+    if (campoE && !campoE.value) {
+        campoE.value = utm.x;
+    }
+    
+    // Atualizar N_UTC
+    const campoN = form.querySelector('input[name="N_UTC"]');
+    if (campoN && !campoN.value) {
+        campoN.value = utm.y;
+    }
+    
+    // Atualizar LATITUDE
+    const campoLat = form.querySelector('input[name="LATITUDE"]');
+    if (campoLat && !campoLat.value) {
+        campoLat.value = lat.toFixed(6);
+    }
+    
+    // Atualizar LONGITUDE
+    const campoLon = form.querySelector('input[name="LONGITUDE"]');
+    if (campoLon && !campoLon.value) {
+        campoLon.value = lng.toFixed(6);
+    }
+}
 
 // ============================================
 // UTILIDADES

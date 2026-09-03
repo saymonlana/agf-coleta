@@ -685,6 +685,15 @@ html, body {
     transition: all 0.3s ease;
 }
 
+.botoes-foto {
+    display: flex;
+    gap: var(--espaco-sm);
+}
+
+.botoes-foto .btn-foto {
+    flex: 1;
+}
+
 .btn-foto svg {
     width: 24px;
     height: 24px;
