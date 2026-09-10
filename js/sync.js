@@ -2186,3 +2186,104 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     } catch(e) {}
 });
+
+// ============================================
+// FUNCAO DE VERIFICACAO (DEBUG - remover depois)
+// ============================================
+
+async function verificarArquivosBox() {
+    console.log('=== VERIFICACAO DE ARQUIVOS BOX ===');
+    
+    if (!await verificarToken()) {
+        console.error('Sem token Box');
+        return;
+    }
+    
+    // 1. Listar arquivos na pasta principal
+    console.log('\n--- Pasta principal (400201285976) ---');
+    try {
+        const dataPrincipal = await boxFetch(
+            `https://api.box.com/2.0/folders/400201285976/items?limit=1000&fields=name,id,size,extension`,
+            { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+        );
+        (dataPrincipal.entries || []).forEach(item => {
+            console.log(`  ${item.type}: ${item.name} (${item.size || '-'} bytes) [id: ${item.id}]`);
+        });
+    } catch(e) {
+        console.error('Erro ao listar pasta principal:', e);
+    }
+    
+    // 2. Listar arquivos na pasta GeoJSON
+    console.log('\n--- Pasta GeoJSON (400216557385) ---');
+    try {
+        const dataGeo = await boxFetch(
+            `https://api.box.com/2.0/folders/400216557385/items?limit=1000&fields=name,id,size,extension`,
+            { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+        );
+        (dataGeo.entries || []).forEach(item => {
+            console.log(`  ${item.type}: ${item.name} (${item.size || '-'} bytes) [id: ${item.id}]`);
+        });
+    } catch(e) {
+        console.error('Erro ao listar pasta GeoJSON:', e);
+    }
+    
+    // 3. Baixar e contar registros do Excel
+    await listarGeoJSONInventario();
+    if (InventarioSync.excel_file_id) {
+        console.log('\n--- Excel (id: ' + InventarioSync.excel_file_id + ') ---');
+        try {
+            const resp = await fetch(PROXY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: `https://api.box.com/2.0/files/${InventarioSync.excel_file_id}/content`,
+                    method: 'GET',
+                    headers: { 'Authorization': 'Bearer ' + Sync.access_token }
+                })
+            });
+            const arrayBuffer = await resp.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            let totalLinhas = 0;
+            workbook.SheetNames.forEach(nome => {
+                const sheet = workbook.Sheets[nome];
+                const dados = XLSX.utils.sheet_to_json(sheet);
+                console.log(`  Aba "${nome}": ${dados.length} registros`);
+                totalLinhas += dados.length;
+            });
+            console.log(`  TOTAL EXCEL: ${totalLinhas} registros`);
+        } catch(e) {
+            console.error('Erro ao ler Excel:', e);
+        }
+    } else {
+        console.log('\nNenhum arquivo Excel encontrado no Box');
+    }
+    
+    // 4. Baixar e contar registros do KML
+    if (InventarioSync.kml_file_ids && Object.keys(InventarioSync.kml_file_ids).length > 0) {
+        console.log('\n--- KMLs encontrados ---');
+        for (const [nome, fileId] of Object.entries(InventarioSync.kml_file_ids)) {
+            try {
+                const resp = await fetch(PROXY_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: `https://api.box.com/2.0/files/${fileId}/content`,
+                        method: 'GET',
+                        headers: { 'Authorization': 'Bearer ' + Sync.access_token }
+                    })
+                });
+                const text = await resp.text();
+                const placemarkCount = (text.match(/<Placemark/g) || []).length;
+                console.log(`  KML "${nome}": ${placemarkCount} placemarks`);
+            } catch(e) {
+                console.error(`  Erro ao ler KML "${nome}":`, e);
+            }
+        }
+    } else {
+        console.log('\nNenhum arquivo KML encontrado');
+    }
+    
+    console.log('\n--- Mapa atual ---');
+    console.log(`  Registros no mapa: ${marcadores.length}`);
+    console.log('\n=== FIM DA VERIFICACAO ===');
+}

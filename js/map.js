@@ -397,11 +397,30 @@ function carregarPontosNoMapa() {
     
     // Verificar se é CMD (Fauna Errante)
     const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    const isInventario = App.projetoAtual === 'inventario';
     const camadaFiltro = isCmd ? 'Questionario_FAUNA_ERRANTE_CMD' : null;
+    
+    // Camadas validas do inventario (para filtrar dados PAEBM)
+    const camadasInventarioValidas = typeof DADOS_CONFIG_INVENTARIO !== 'undefined' 
+        ? Object.keys(DADOS_CONFIG_INVENTARIO.camadas || {}) 
+        : [];
     
     // Carregar dados do Box (CMD usa chave separada 'cmd')
     const chaveBox = isCmd ? 'cmd' : App.projetoAtual;
     const dadosBox = App.dadosBox[chaveBox] || [];
+    
+    // Debug: mostrar dados carregados
+    if (isInventario) {
+        const porCamada = {};
+        dadosBox.forEach(f => {
+            const c = f._camada || f.properties?._camada || 'SEM_CAMADA';
+            porCamada[c] = (porCamada[c] || 0) + 1;
+        });
+        console.log('[MAPA] Dados do inventario:', dadosBox.length, 'registros por camada:', porCamada);
+    }
+    
+    // Propriedades que identificam dados PAEBM (nao do inventario)
+    const propsPAEBM = ['CODIGO', 'STATUS_DA_PESQUISA', 'MUNICIPIO', 'ENDERECO_COMPLETO', 'BAIRRO_LOCALIDADE'];
     
     // Adicionar cada feature no mapa
     dadosBox.forEach(feature => {
@@ -409,6 +428,17 @@ function carregarPontosNoMapa() {
         if (camadaFiltro) {
             const camadaFeature = feature._camada || feature.properties?._camada || '';
             if (camadaFeature !== camadaFiltro) return;
+        }
+        
+        // Filtrar: se for inventario, mostrar apenas camadas validas do inventario
+        if (isInventario && camadasInventarioValidas.length > 0) {
+            const camadaFeature = feature._camada || feature.properties?._camada || '';
+            if (!camadaFeature || !camadasInventarioValidas.includes(camadaFeature)) return;
+            
+            // Filtro extra: excluir features com propriedades PAEBM
+            const props = feature.properties || {};
+            const isPAEBM = propsPAEBM.some(p => props[p] !== undefined);
+            if (isPAEBM) return;
         }
         
         if (feature.geometry && feature.geometry.coordinates) {
@@ -459,6 +489,12 @@ function carregarPontosNoMapa() {
             if (camadaDado && camadaDado !== camadaFiltro) return;
             // Se ja foi sincronizado e tem dados no Box, pular (evitar duplicata)
             if (dado.status === 'sincronizado' && dadosBox.length > 0) return;
+        }
+        
+        // Filtrar: se for inventario, mostrar apenas camadas validas do inventario
+        if (isInventario && camadasInventarioValidas.length > 0) {
+            const camadaDado = dado.camada || '';
+            if (!camadaDado || !camadasInventarioValidas.includes(camadaDado)) return;
         }
         
         if (dado.latitude && dado.longitude) {

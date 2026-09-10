@@ -533,6 +533,273 @@
         </div>
     </div>
 
+    <!-- ========== TELA INVENTARIO - HOME ========== -->
+    <div id="tela-inventario-home" class="tela">
+        <header class="header">
+            <button id="btn-voltar-inv-projetos" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1>Inventario Florestal</h1>
+                <span id="inventario-subtitulo">Registros de parcelas</span>
+            </div>
+            <button id="inventario-btn-exportar-tudo" class="btn-icon" title="Exportar CSV">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="inventario-lista" id="inventario-lista-parcelas">
+            <!-- Parcelas carregadas dinamicamente -->
+        </div>
+
+        <button id="inventario-btn-novo" class="btn-novo-individuo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Novo Registro
+        </button>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - DETALHE PARCELA ========== -->
+    <div id="tela-inventario-detalhe" class="tela">
+        <header class="header">
+            <button id="btn-voltar-detalhe-inv" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="inventario-parcela-nome-titulo">Parcela</h1>
+                <span id="inventario-parcela-fisionomia-sub">Fisionomia</span>
+            </div>
+            <button id="inventario-btn-exportar-detalhe" class="btn-icon" title="Exportar CSV">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+            </button>
+        </header>
+
+        <div class="inventario-detalhe-lista" id="inventario-detalhe-lista">
+            <!-- Itens gerados dinamicamente -->
+        </div>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - LISTA INDIVIDUOS ========== -->
+    <div id="tela-inventario-lista-individuos" class="tela">
+        <header class="header">
+            <button id="btn-voltar-lista-ind-inv" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="inventario-estrato-titulo">Arboreo</h1>
+                <span id="inventario-estrato-parcela-nome">Parcela</span>
+            </div>
+            <div></div>
+        </header>
+
+        <div class="inventario-spreadsheet-wrapper" id="inventario-spreadsheet-wrapper">
+            <div class="inventario-spreadsheet-scroll" id="inventario-spreadsheet-scroll">
+                <!-- Spreadsheet gerada dinamicamente -->
+            </div>
+        </div>
+
+        <button id="inventario-btn-novo-individuo" class="btn-novo-individuo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Novo Individuo
+        </button>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - FORM INDIVIDUO ========== -->
+    <div id="tela-inventario-form-individuo" class="tela">
+        <header class="header">
+            <button id="btn-voltar-form-ind-inv" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="inventario-form-individuo-titulo">Novo Individuo</h1>
+                <span id="inventario-form-individuo-estrato">Arboreo</span>
+            </div>
+            <button id="btn-salvar-individuo-inv" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+
+        <form id="form-individuo-inv" class="form-coleta">
+            <div id="campos-form-individuo-inv">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - FORM CARACTERIZACAO ========== -->
+    <div id="tela-inventario-form-caracterizacao" class="tela">
+        <header class="header">
+            <button id="btn-voltar-caract-inv" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1>Caracterizacao</h1>
+                <span id="inventario-caract-parcela-nome">Parcela</span>
+            </div>
+            <button id="btn-salvar-caract-inv" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+
+        <form id="form-caracterizacao-inv" class="form-coleta">
+            <div id="campos-form-caracterizacao-inv">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - FORM CRIAR PARCELA ========== -->
+    <div id="tela-criar-parcela-inv" class="tela">
+        <header class="header">
+            <button id="btn-voltar-form-parcela-inv" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="form-parcela-inv-titulo">Nova Parcela</h1>
+                <span id="coordenadas-parcela-gps-inv">Lat: --- | Lon: ---</span>
+            </div>
+            <button id="btn-salvar-parcela-inv" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+
+        <form id="form-criar-parcela-inv" class="form-coleta">
+            <div id="campos-criar-parcela-inv">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - LISTA SUB-PARCELAS (CENSO) ========== -->
+    <div id="tela-inventario-lista-subparcelas" class="tela">
+        <header class="header">
+            <button id="btn-voltar-lista-subparcelas" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="inventario-subparcelas-titulo">Sub-parcelas</h1>
+                <span id="inventario-subparcelas-parcela-nome">Parcela</span>
+            </div>
+            <div></div>
+        </header>
+
+        <div class="inventario-lista" id="inventario-lista-subparcelas">
+            <!-- Sub-parcelas geradas dinamicamente -->
+        </div>
+
+        <button id="inventario-btn-nova-subparcela" class="btn-novo-individuo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Sub-parcela
+        </button>
+    </div>
+
+    <!-- ========== TELA INVENTARIO - FORM SUB-PARCELA ========== -->
+    <div id="tela-inventario-form-subparcela" class="tela">
+        <header class="header">
+            <button id="btn-voltar-form-subparcela" class="btn-icon" title="Voltar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1 id="inventario-form-subparcela-titulo">Nova Sub-parcela</h1>
+                <span></span>
+            </div>
+            <button id="btn-salvar-subparcela-inv" class="btn-icon btn-salvar" title="Salvar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                    <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+            </button>
+        </header>
+
+        <form id="form-subparcela-inv" class="form-coleta">
+            <div id="campos-form-subparcela-inv">
+                <!-- Campos gerados dinamicamente -->
+            </div>
+        </form>
+    </div>
+
+    <!-- ========== MODAL INVENTARIO - MENU PARCELA ========== -->
+    <div id="modal-inventario-menu" class="modal inventario-modal">
+        <div class="inventario-modal-content">
+            <div class="inventario-modal-header">
+                <h3>Opcoes</h3>
+                <button id="inventario-btn-fechar-menu" class="inventario-btn-fechar">&times;</button>
+            </div>
+            <div id="inventario-menu-opcoes" class="inventario-modal-body">
+                <!-- Opcoes geradas dinamicamente -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MODAL INVENTARIO - CONFIRMAR EXCLUSAO ========== -->
+    <div id="modal-inventario-confirmar" class="modal inventario-modal">
+        <div class="inventario-modal-content">
+            <div class="inventario-modal-header">
+                <h3 id="inventario-confirmar-titulo">Confirmar</h3>
+            </div>
+            <div class="inventario-modal-body">
+                <p id="inventario-confirmar-texto">Tem certeza?</p>
+            </div>
+            <div class="inventario-modal-footer">
+                <button id="inventario-btn-cancelar-confirmar" class="btn-secundario">Cancelar</button>
+                <button id="inventario-btn-confirmar" class="btn-excluir">Excluir</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ========== TOAST NOTIFICAÇÃO ========== -->
     <div id="toast" class="toast"></div>
     <div id="toast-persistente" class="toast-persistente"></div>
@@ -555,5 +822,6 @@
     <script src="js/excel.js?t=20260825"></script>
     <script src="js/app.js?t=20260825"></script>
     <script src="js/map.js?t=20260825"></script>
+    <script src="js/inventario.js?t=20260904"></script>
 </body>
 </html>

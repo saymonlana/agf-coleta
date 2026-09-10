@@ -238,12 +238,30 @@ function limparCacheCmd() {
 async function carregarInventarioDoBox() {
     console.log('Iniciando carregamento do Box...');
     
+    // Camadas validas do inventario (para filtrar dados invalidos)
+    const camadasValidas = typeof DADOS_CONFIG_INVENTARIO !== 'undefined' 
+        ? Object.keys(DADOS_CONFIG_INVENTARIO.camadas || {}) 
+        : [];
+    
+    function filtrarDadosInventario(dados) {
+        if (camadasValidas.length === 0) return dados;
+        const propsPAEBM = ['CODIGO', 'STATUS_DA_PESQUISA', 'MUNICIPIO', 'ENDERECO_COMPLETO', 'BAIRRO_LOCALIDADE'];
+        return dados.filter(f => {
+            const camada = f._camada || f.properties?._camada || '';
+            if (!camada || !camadasValidas.includes(camada)) return false;
+            const props = f.properties || {};
+            if (propsPAEBM.some(p => props[p] !== undefined)) return false;
+            return true;
+        });
+    }
+    
     // 1. Carregar do cache primeiro (instantaneo)
     const cache = carregarCacheInventario();
     if (cache && cache.length > 0) {
-        App.dadosBox['inventario'] = cache;
-        console.log('Carregado do cache:', cache.length, 'registros');
-        mostrarToast(`Dados do cache (${cache.length} registros) - atualizando...`, 'info');
+        const cacheFiltrado = filtrarDadosInventario(cache);
+        App.dadosBox['inventario'] = cacheFiltrado;
+        console.log('Carregado do cache:', cacheFiltrado.length, 'registros');
+        mostrarToast(`Dados do cache (${cacheFiltrado.length} registros) - atualizando...`, 'info');
     }
     
     // 2. Buscar do Box em background
@@ -299,23 +317,25 @@ async function carregarInventarioDoBox() {
             return;
         }
         
-        // 3. Salvar no cache
-        App.dadosBox['inventario'] = novosDados;
-        salvarCacheInventario(novosDados);
+    // 3. Salvar no cache
+    const dadosFiltrados = filtrarDadosInventario(novosDados);
+    App.dadosBox['inventario'] = dadosFiltrados;
+    salvarCacheInventario(dadosFiltrados);
+    
+    console.log(`Total do Box: ${dadosFiltrados.length} registros (de ${novosDados.length} baixados)`);
         
-        console.log(`Total do Box: ${novosDados.length} registros`);
-        
-        // 4. Atualizar mapa
+        // 4. Atualizar mapa e contador
         if (mapa && App.projetoAtual === 'inventario') {
             carregarPontosNoMapa();
+            atualizarContadorPontos();
         }
         
         // 5. Esconder toast e mostrar sucesso
         toast.className = 'toast-persistente';
-        if (cache && cache.length !== novosDados.length) {
-            mostrarToast(`${novosDados.length} registros atualizados do Box`, 'sucesso');
+        if (cache && cache.length !== dadosFiltrados.length) {
+            mostrarToast(`${dadosFiltrados.length} registros atualizados do Box`, 'sucesso');
         } else if (!cache || cache.length === 0) {
-            mostrarToast(`${novosDados.length} registros carregados do Box`, 'sucesso');
+            mostrarToast(`${dadosFiltrados.length} registros carregados do Box`, 'sucesso');
         }
         
     } catch (e) {
@@ -813,6 +833,22 @@ async function abrirProjeto(projetoId) {
     // Verificar se é o projeto CMD (mapa em branco)
     const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
     
+    // Verificar se é o novo fluxo de inventario (parceiras do colega)
+    const isInventarioNovo = projetoId === 'inventario' && App.projetoClienteAtual && 
+        (App.projetoClienteAtual.id === 'anglo_inv1');
+    
+    // Se for o novo fluxo de inventario, abrir a tela home do inventario
+    if (isInventarioNovo) {
+        document.getElementById('inventario-subtitulo').textContent = nomeProjeto;
+        if (typeof abrirTelaInventario === 'function') {
+            abrirTelaInventario();
+        } else {
+            mostrarToast('Modulo de inventario nao carregado', 'erro');
+        }
+        carregarInventarioDoBox();
+        return;
+    }
+    
     const btnCamadas = document.getElementById('btn-camadas');
     if (btnCamadas) {
         btnCamadas.style.display = projetoId === 'inventario' ? 'flex' : 'none';
@@ -849,7 +885,6 @@ async function abrirProjeto(projetoId) {
             mapa.invalidateSize();
             if (isCmd) {
                 mapa.setView([-19.036886, -43.424913], 13);
-                limparMarcadores();
             } else if (projetoId === 'inventario') {
                 // Remover flag para permitir recarregar camadas e refocar
                 camadasInventarioCarregadas = false;
@@ -881,13 +916,46 @@ function restaurarTituloProjeto() {
 
 function atualizarContadorPontos() {
     const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    const isInventario = App.projetoAtual === 'inventario';
     const camadaFiltro = isCmd ? 'Questionario_FAUNA_ERRANTE_CMD' : null;
     
+    // Camadas validas do inventario (para filtrar dados PAEBM)
+    const camadasInventarioValidas = typeof DADOS_CONFIG_INVENTARIO !== 'undefined' 
+        ? Object.keys(DADOS_CONFIG_INVENTARIO.camadas || {}) 
+        : [];
+    
+    // Propriedades que identificam dados PAEBM
+    const propsPAEBM = ['CODIGO', 'STATUS_DA_PESQUISA', 'MUNICIPIO', 'ENDERECO_COMPLETO', 'BAIRRO_LOCALIDADE'];
+    
+    function filtrarDados(dados) {
+        let resultado = dados;
+        if (isInventario && camadasInventarioValidas.length > 0) {
+            resultado = resultado.filter(f => {
+                const camada = f._camada || f.properties?._camada || '';
+                if (!camada || !camadasInventarioValidas.includes(camada)) return false;
+                const props = f.properties || {};
+                if (propsPAEBM.some(p => props[p] !== undefined)) return false;
+                return true;
+            });
+        }
+        return resultado;
+    }
+    
     const chaveBox = isCmd ? 'cmd' : App.projetoAtual;
-    const dadosBox = App.dadosBox[chaveBox] || [];
+    const dadosBox = filtrarDados(App.dadosBox[chaveBox] || []);
     const totalBox = dadosBox.length;
     
-    const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
+    let dadosLocais = App.dadosLocais[App.projetoAtual] || [];
+    
+    // Filtrar dados locais para inventario
+    if (isInventario && camadasInventarioValidas.length > 0) {
+        dadosLocais = dadosLocais.filter(d => {
+            const camada = d.camada || '';
+            if (!camada || !camadasInventarioValidas.includes(camada)) return false;
+            if (propsPAEBM.some(p => d[p] !== undefined)) return false;
+            return true;
+        });
+    }
     
     // Para CMD: total = Box + locais novos (evita duplicar com sincronizados)
     // Para SAG: total = Box + todos locais
@@ -936,7 +1004,20 @@ function atualizarContadorPontos() {
 // ============================================
 
 function abrirFormularioColeta() {
-    // Novo fluxo: Inventario usa sistema de parcelas
+    // Novo fluxo: Inventario do colega (anglo_inv1) usa tela propria
+    const isInventarioNovo = App.projetoAtual === 'inventario' && App.projetoClienteAtual && 
+        App.projetoClienteAtual.id === 'anglo_inv1';
+    
+    if (isInventarioNovo) {
+        // Usar posicao do crosshair para criar parcela
+        const posicao = App.currentPosition || App.crosshairPosition || (mapa ? { lat: mapa.getCenter().lat, lng: mapa.getCenter().lng } : null);
+        if (posicao && typeof aoColetarPontoInventario === 'function') {
+            aoColetarPontoInventario(posicao);
+        }
+        return;
+    }
+    
+    // Fluxo legado: Inventario usa sistema de parcelas
     if (App.projetoAtual === 'inventario') {
         abrirCriarParcela();
         return;
@@ -1004,6 +1085,27 @@ function abrirFormularioColeta() {
     
     gerarCamposFormulario();
     mostrarTela('tela-coleta', false);
+}
+
+// ============================================
+// REVERSE GEOCODING (Nominatim - OpenStreetMap)
+// ============================================
+
+async function buscarEnderecoPorCoordenadas(lat, lng) {
+    try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=pt-BR`;
+        const resp = await fetch(url, {
+            headers: { 'User-Agent': 'AGF_Coleta/1.0' }
+        });
+        if (!resp.ok) return null;
+        const data = await resp.json();
+        const addr = data.address || {};
+        const municipio = addr.city || addr.town || addr.village || addr.county || addr.municipality || '';
+        return { municipio };
+    } catch (e) {
+        console.warn('Erro no reverse geocoding:', e);
+        return null;
+    }
 }
 
 function gerarCamposFormulario() {
@@ -1132,6 +1234,26 @@ function gerarCamposFormulario() {
         
         container.appendChild(div);
     });
+    
+    // Para CMD: preencher municipio via reverse geocoding
+    if (isCmd) {
+        const posicao = App.currentPosition || App.crosshairPosition;
+        if (posicao) {
+            buscarEnderecoPorCoordenadas(posicao.lat, posicao.lng).then(resultado => {
+                if (!resultado || !resultado.municipio) return;
+                
+                const input = container.querySelector('[name="MUNICIPIO"]');
+                if (input) {
+                    input.value = resultado.municipio;
+                    input.readOnly = true;
+                    input.style.backgroundColor = '#f0f0f0';
+                    input.style.cursor = 'not-allowed';
+                }
+                
+                mostrarToast('Municipio preenchido automaticamente', 'sucesso');
+            });
+        }
+    }
 }
 
 // ============================================
