@@ -566,15 +566,73 @@ function handleSync() {
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
     const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
     const dadosEditadosBox = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+    const dadosEditadosCmd = dadosEditadosBox.filter(d => d._camada === 'Questionario_FAUNA_ERRANTE_CMD');
     
-    console.log('Dados locais:', dadosLocais.length, '| Novos:', dadosNovos.length, '| Editados Box:', dadosEditadosBox.length);
+    const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
+    const editadosRelevantes = isCmd ? dadosEditadosCmd : dadosEditadosBox.filter(d => d._camada !== 'Questionario_FAUNA_ERRANTE_CMD');
     
-    if (dadosNovos.length === 0 && dadosEditadosBox.length === 0) {
+    console.log('Dados locais:', dadosLocais.length, '| Novos:', dadosNovos.length, '| Editados:', editadosRelevantes.length);
+    
+    if (dadosNovos.length === 0 && editadosRelevantes.length === 0) {
         mostrarToast('Nenhum dado novo para sincronizar', 'aviso');
         return;
     }
     
-    sincronizarDados();
+    mostrarPreviewSync(dadosNovos, editadosRelevantes);
+}
+
+function mostrarPreviewSync(dadosNovos, editadosRelevantes) {
+    const modal = document.getElementById('modal-preview-sync');
+    const titulo = document.getElementById('preview-sync-titulo');
+    const subtitulo = document.getElementById('preview-sync-subtitulo');
+    const lista = document.getElementById('preview-lista');
+    const badgeNovos = document.getElementById('preview-novos');
+    const badgeEditados = document.getElementById('preview-editados');
+    const btnConfirmar = document.getElementById('btn-preview-confirmar');
+    const btnCancelar = document.getElementById('btn-preview-cancelar');
+    
+    titulo.textContent = 'Confirmar Sincronização';
+    subtitulo.textContent = 'Itens que serão enviados ao Box:';
+    btnConfirmar.textContent = 'Sincronizar';
+    btnConfirmar.style.background = '';
+    
+    badgeNovos.textContent = dadosNovos.length + ' novos';
+    badgeEditados.textContent = editadosRelevantes.length + ' editados';
+    
+    badgeNovos.style.display = dadosNovos.length === 0 ? 'none' : 'inline-block';
+    badgeEditados.style.display = editadosRelevantes.length === 0 ? 'none' : 'inline-block';
+    
+    let html = '';
+    
+    dadosNovos.forEach(dado => {
+        const nome = dado.campos?.PONTO || dado.campos?.CODIGO || dado.id;
+        html += `<div class="preview-item">
+            <span class="preview-item-tipo preview-item-novo">NOVO</span>
+            <span class="preview-item-nome">${nome}</span>
+        </div>`;
+    });
+    
+    editadosRelevantes.forEach(editado => {
+        const props = editado.properties || {};
+        const nome = props.PONTO || props.CODIGO || editado._id || 'Ponto';
+        html += `<div class="preview-item">
+            <span class="preview-item-tipo preview-item-editado">EDITADO</span>
+            <span class="preview-item-nome">${nome}</span>
+        </div>`;
+    });
+    
+    lista.innerHTML = html;
+    
+    btnCancelar.onclick = () => {
+        modal.classList.remove('ativo');
+    };
+    
+    btnConfirmar.onclick = () => {
+        modal.classList.remove('ativo');
+        sincronizarDados(true);
+    };
+    
+    modal.classList.add('ativo');
 }
 
 
@@ -769,7 +827,7 @@ function mostrarProjetosDoCliente(clienteId) {
             'samarco': [],
             'gerdau': [],
             'anglo': [
-                { id: 'anglo_projeto1', nome: '2284_023 PAEBM - SAG', descricao: 'Em configuracao' },
+                { id: 'anglo_projeto1', nome: '2284_023 PAEBM - SAG', descricao: 'Coleta pausada', pausado: true },
                 { id: 'anglo_projeto2', nome: '2348 PAEBM - CMD', descricao: 'Em configuracao' }
             ]
         },
@@ -799,20 +857,28 @@ function mostrarProjetosDoCliente(clienteId) {
     
     projetos.forEach(proj => {
         const card = document.createElement('div');
-        card.className = 'projeto-card';
+        card.className = 'projeto-card' + (proj.pausado ? ' pausado' : '');
         card.dataset.projetoCliente = proj.id;
         card.innerHTML = `
-            <div class="projeto-icone">📋</div>
+            <div class="projeto-icone">${proj.pausado ? '⏸️' : '📋'}</div>
             <div class="projeto-info">
                 <h3>${proj.nome}</h3>
                 <p>${proj.descricao}</p>
+                ${proj.pausado ? '<span class="badge-pausado">Pausado</span>' : ''}
             </div>
-            <div class="projeto-seta">›</div>
+            ${!proj.pausado ? '<div class="projeto-seta">›</div>' : ''}
         `;
-        card.addEventListener('click', () => {
-            App.projetoClienteAtual = proj;
-            abrirProjeto(App.projetoAtual);
-        });
+        if (proj.pausado) {
+            card.style.cursor = 'default';
+            card.addEventListener('click', () => {
+                mostrarToast('Este projeto esta pausado no momento', 'aviso');
+            });
+        } else {
+            card.addEventListener('click', () => {
+                App.projetoClienteAtual = proj;
+                abrirProjeto(App.projetoAtual);
+            });
+        }
         container.appendChild(card);
     });
 }
@@ -1670,28 +1736,39 @@ function editarPontoLocal(id) {
 }
 
 function editarPontoBox(id, camada) {
-    const dadosBox = App.dadosBox['inventario'] || [];
-    const ponto = dadosBox.find(f => f.properties && f.properties._id === id);
+    // Buscar em todos os dados do Box (inventario + cmd)
+    let ponto = null;
+    let origemCamada = camada;
+    
+    const dadosInventario = App.dadosBox['inventario'] || [];
+    ponto = dadosInventario.find(f => f.properties && f.properties._id === id);
     
     if (!ponto) {
-        mostrarToast('Ponto nao encontrado no Box', 'erro');
+        const dadosCmd = App.dadosBox['cmd'] || [];
+        ponto = dadosCmd.find(f => f.properties && f.properties._id === id);
+    }
+    
+    if (!ponto) {
+        mostrarToast('Ponto nao encontrado', 'erro');
         return;
     }
     
-    AppEditando = { id: id, origem: 'box', camada: camada };
-    
-    App.projetoAtual = 'inventario';
-    CamadasConfig.camadaAtiva = camada;
-    
-    document.getElementById('titulo-projeto').textContent = 'Editar Ponto (Box)';
+    AppEditando = { id: id, origem: 'box', camada: origemCamada };
     
     gerarCamposFormulario();
     mostrarTela('tela-coleta');
     
     const h1 = document.querySelector('#tela-coleta h1');
+    let nomeCamada = '';
+    
+    if (origemCamada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[origemCamada]) {
+        nomeCamada = DADOS_CONFIG_INVENTARIO.camadas[origemCamada].nome;
+    } else if (origemCamada && typeof DADOS_CONFIG !== 'undefined' && DADOS_CONFIG.camadas_coleta && DADOS_CONFIG.camadas_coleta[origemCamada]) {
+        nomeCamada = DADOS_CONFIG.camadas_coleta[origemCamada].nome || origemCamada;
+    }
+    
     if (h1) {
-        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
-        h1.textContent = `Editar Box - ${configCamada ? configCamada.nome : 'Ponto'}`;
+        h1.textContent = `Editar - ${nomeCamada || 'Ponto'}`;
     }
     
     // Exibir coordenadas salvas do ponto
@@ -1717,11 +1794,6 @@ function editarPontoBox(id, camada) {
                 input.value = props[input.name];
             }
         });
-        
-        const btnSubmeter = form.querySelector('button[type="submit"]');
-        if (btnSubmeter) {
-            btnSubmeter.textContent = 'Salvar Alteracoes';
-        }
     }, 200);
 }
 
@@ -1747,8 +1819,15 @@ function salvarEdicao(campos) {
             return true;
         }
     } else if (AppEditando.origem === 'box') {
-        const dadosBox = App.dadosBox['inventario'] || [];
-        const ponto = dadosBox.find(f => f.properties && f.properties._id === AppEditando.id);
+        let ponto = null;
+        
+        const dadosInventario = App.dadosBox['inventario'] || [];
+        ponto = dadosInventario.find(f => f.properties && f.properties._id === AppEditando.id);
+        
+        if (!ponto) {
+            const dadosCmd = App.dadosBox['cmd'] || [];
+            ponto = dadosCmd.find(f => f.properties && f.properties._id === AppEditando.id);
+        }
         
         if (ponto) {
             Object.assign(ponto.properties, campos);
@@ -2165,11 +2244,26 @@ function salvarDadosLocais() {
     const dadosLimpos = {};
     for (const projeto of Object.keys(App.dadosLocais)) {
         dadosLimpos[projeto] = App.dadosLocais[projeto].map(dado => {
-            const { _marcador, ...resto } = dado;
+            const { _marcador, foto, ...resto } = dado;
             return resto;
         });
     }
-    localStorage.setItem('agf_dados', JSON.stringify(dadosLimpos));
+    try {
+        localStorage.setItem('agf_dados', JSON.stringify(dadosLimpos));
+    } catch (e) {
+        console.warn('Dados locais: localStorage cheio, removendo fotos');
+        for (const projeto of Object.keys(dadosLimpos)) {
+            dadosLimpos[projeto] = dadosLimpos[projeto].map(dado => {
+                const { foto, ...resto } = dado;
+                return resto;
+            });
+        }
+        try {
+            localStorage.setItem('agf_dados', JSON.stringify(dadosLimpos));
+        } catch (e2) {
+            console.error('Dados locais: impossivel salvar');
+        }
+    }
 }
 
 // ============================================
@@ -2286,17 +2380,50 @@ const FilaSync = {
         const itensLimpos = this.itens.map(item => {
             if (item.dados && item.dados._marcador) {
                 const { _marcador, ...dadosLimpos } = item.dados;
-                return { ...item, dados: dadosLimpos };
+                const { foto, ...dadosSemFoto } = dadosLimpos;
+                return { ...item, dados: dadosSemFoto };
+            }
+            if (item.dados && item.dados.foto) {
+                const { foto, ...dadosSemFoto } = item.dados;
+                return { ...item, dados: dadosSemFoto };
             }
             return item;
         });
-        localStorage.setItem('agf_fila_sync', JSON.stringify(itensLimpos));
+        try {
+            localStorage.setItem('agf_fila_sync', JSON.stringify(itensLimpos));
+        } catch (e) {
+            console.warn('FilaSync: localStorage cheio, limpando itens sincronizados');
+            this.itens = this.itens.filter(i => i.status === 'pendente');
+            const retry = this.itens.map(item => {
+                const { foto, ...dadosSemFoto } = item.dados || {};
+                return { ...item, dados: dadosSemFoto };
+            });
+            try {
+                localStorage.setItem('agf_fila_sync', JSON.stringify(retry));
+            } catch (e2) {
+                console.error('FilaSync: impossivel salvar, localStorage cheio');
+                this.itens = [];
+            }
+        }
     },
     
     carregar() {
         const dados = localStorage.getItem('agf_fila_sync');
         if (dados) {
-            this.itens = JSON.parse(dados);
+            try {
+                this.itens = JSON.parse(dados);
+                this.itens = this.itens.map(item => {
+                    if (item.dados && item.dados.foto) {
+                        const { foto, ...resto } = item.dados;
+                        return { ...item, dados: resto };
+                    }
+                    return item;
+                });
+            } catch (e) {
+                console.warn('FilaSync: erro ao carregar, resetando');
+                this.itens = [];
+                localStorage.removeItem('agf_fila_sync');
+            }
         }
     },
     
@@ -2323,7 +2450,8 @@ const CamadasConfig = {
         'Caracterizacao_FESD': '#1ABC9C',
         'Caracterizacao_Cerrado': '#34495E',
         'Caracterizacao_CR': '#95A5A6',
-        'Floristica_Caminhamento_CR': '#E91E63'
+        'Floristica_Caminhamento_CR': '#E91E63',
+        'Questionario_FAUNA_ERRANTE_CMD': '#27AE60'
     },
     visiveis: {},
     camadaAtiva: null

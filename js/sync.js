@@ -401,16 +401,16 @@ async function baixarArquivoBox(fileId) {
 // SINCRONIZACAO PRINCIPAL
 // ============================================
 
-async function sincronizarDados() {
+async function sincronizarDados(previewAprovado = false) {
     // Para o Inventário, usar sincronização específica
     if (App.projetoAtual === 'inventario') {
-        return await sincronizarInventario();
+        return await sincronizarInventario(previewAprovado);
     }
     
     // Para o CMD, usar sincronização específica
     const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
     if (isCmd) {
-        return await sincronizarCmd();
+        return await sincronizarCmd(previewAprovado);
     }
     
     const modal = document.getElementById('modal-sync');
@@ -1100,7 +1100,7 @@ function mostrarRevisao(dadosNovos) {
     });
 }
 
-async function sincronizarInventario() {
+async function sincronizarInventario(previewAprovado = false) {
     const dadosLocais = App.dadosLocais['inventario'] || [];
     const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
     
@@ -1111,13 +1111,15 @@ async function sincronizarInventario() {
         return;
     }
     
-    const itensRevisao = [
-        ...dadosNovos.map(d => ({...d, _tipoRevisao: d.editado ? 'editado' : 'novo'})),
-        ...dadosEditadosBox.map(d => ({id: d._id, camada: d._camada, campos: d.properties, _tipoRevisao: 'editado'}))
-    ];
-    
-    const aprovado = await mostrarRevisao(itensRevisao);
-    if (!aprovado) return;
+    if (!previewAprovado) {
+        const itensRevisao = [
+            ...dadosNovos.map(d => ({...d, _tipoRevisao: d.editado ? 'editado' : 'novo'})),
+            ...dadosEditadosBox.map(d => ({id: d._id, camada: d._camada, campos: d.properties, _tipoRevisao: 'editado'}))
+        ];
+        
+        const aprovado = await mostrarRevisao(itensRevisao);
+        if (!aprovado) return;
+    }
     
     const modal = document.getElementById('modal-sync');
     const titulo = document.getElementById('sync-titulo');
@@ -1695,7 +1697,7 @@ const LABELS_CMD = [
     'Observacao', 'Data Registro', 'Hora do Registro', 'Barragem'
 ];
 
-async function sincronizarCmd() {
+async function sincronizarCmd(previewAprovado = false) {
     const modal = document.getElementById('modal-sync');
     const titulo = document.getElementById('sync-titulo');
     const status = document.getElementById('sync-status');
@@ -1721,8 +1723,9 @@ async function sincronizarCmd() {
         
         const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
         const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
+        const dadosEditadosBox = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
         
-        if (dadosNovos.length === 0) {
+        if (dadosNovos.length === 0 && dadosEditadosBox.length === 0) {
             titulo.textContent = 'Nada para sincronizar';
             status.textContent = 'Todos os dados ja foram enviados';
             progress.style.width = '100%';
@@ -1730,17 +1733,88 @@ async function sincronizarCmd() {
             return;
         }
         
+        // Baixar GeoJSON existente do Box para mesclar
+        titulo.textContent = 'Baixando dados existentes...';
+        status.textContent = 'Consultando Box...';
+        progress.style.width = '25%';
+        
+        let geojsonExistente = null;
+        try {
+            geojsonExistente = await baixarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD');
+        } catch(e) {}
+        
+        let featuresFinais = [];
+        
+        // Comecar com features existentes do Box
+        if (geojsonExistente && geojsonExistente.features) {
+            featuresFinais = geojsonExistente.features.map(f => ({
+                ...f,
+                _camada: 'Questionario_FAUNA_ERRANTE_CMD'
+            }));
+        }
+        
+        // Aplicar edicoes do Box
+        dadosEditadosBox.forEach(editado => {
+            const idx = featuresFinais.findIndex(f => f.properties && f.properties._id === editado._id);
+            if (idx !== -1) {
+                featuresFinais[idx].properties = {
+                    ...featuresFinais[idx].properties,
+                    ...editado.properties,
+                    _editado: true,
+                    _editado_em: new Date().toISOString()
+                };
+            }
+        });
+        
+        // Adicionar novos pontos locais
+        const idsExistentes = new Set(featuresFinais.map(f => f.properties && f.properties._id));
+        dadosNovos.forEach(dado => {
+            if (!idsExistentes.has(dado.id)) {
+                featuresFinais.push({
+                    type: 'Feature',
+                    _camada: 'Questionario_FAUNA_ERRANTE_CMD',
+                    geometry: {
+                        type: 'Point',
+                        coordinates: [dado.longitude, dado.latitude]
+                    },
+                    properties: {
+                        ...dado.campos,
+                        _id: dado.id,
+                        _camada: 'Questionario_FAUNA_ERRANTE_CMD',
+                        _tecnico: dado.tecnico,
+                        _data_coleta: dado.dataColeta
+                    }
+                });
+                idsExistentes.add(dado.id);
+            }
+        });
+        
+        // Converter features para formato dos geradores Excel/KML
+        const dadosCompletos = featuresFinais.map(f => {
+            const props = f.properties || {};
+            const coords = f.geometry ? f.geometry.coordinates : [0, 0];
+            return {
+                campos: props,
+                tecnico: props._tecnico || '',
+                dataColeta: props._data_coleta || '',
+                latitude: coords[1],
+                longitude: coords[0]
+            };
+        });
+        
+        // Gerar Excel com dados completos
         titulo.textContent = 'Gerando planilha Excel...';
-        status.textContent = `Criando planilha com ${dadosLocais.length} pontos...`;
-        progress.style.width = '30%';
+        status.textContent = `Criando planilha com ${dadosCompletos.length} pontos...`;
+        progress.style.width = '40%';
         
-        await gerarESalvarExcelCmd(dadosLocais);
+        await gerarESalvarExcelCmd(dadosCompletos);
         
+        // Gerar KML com dados completos
         titulo.textContent = 'Gerando KML...';
-        status.textContent = `Criando KML com ${dadosLocais.length} pontos...`;
-        progress.style.width = '60%';
+        status.textContent = `Criando KML com ${dadosCompletos.length} pontos...`;
+        progress.style.width = '55%';
         
-        await gerarESalvarKmlCmd(dadosLocais);
+        await gerarESalvarKmlCmd(dadosCompletos);
         
         // Salvar GeoJSON no Box
         titulo.textContent = 'Salvando GeoJSON...';
@@ -1749,21 +1823,7 @@ async function sincronizarCmd() {
         
         const geojsonData = {
             type: 'FeatureCollection',
-            features: dadosLocais.map(dado => ({
-                type: 'Feature',
-                _camada: 'Questionario_FAUNA_ERRANTE_CMD',
-                geometry: {
-                    type: 'Point',
-                    coordinates: [dado.longitude, dado.latitude]
-                },
-                properties: {
-                    ...dado.campos,
-                    _id: dado.id,
-                    _camada: 'Questionario_FAUNA_ERRANTE_CMD',
-                    _tecnico: dado.tecnico,
-                    _data_coleta: dado.dataColeta
-                }
-            }))
+            features: featuresFinais
         };
         await salvarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD', geojsonData);
         
@@ -1803,8 +1863,11 @@ async function sincronizarCmd() {
         
         salvarDadosLocais();
         
+        // Limpar editados do Box apos sincronizacao
+        localStorage.removeItem('agf_inventario_editados');
+        
         titulo.textContent = 'Sincronizacao concluida!';
-        status.textContent = `${dadosLocais.length} pontos enviados + Excel + KML + GeoJSON`;
+        status.textContent = `${featuresFinais.length} pontos no total (novos + editados)`;
         progress.style.width = '100%';
         btnFechar.style.display = 'block';
         
@@ -1813,7 +1876,7 @@ async function sincronizarCmd() {
         
         atualizarContadorPontos();
         carregarPontosNoMapa();
-        mostrarToast(`${dadosLocais.length} pontos sincronizados!`, 'sucesso');
+        mostrarToast(`${dadosNovos.length} novos + ${dadosEditadosBox.length} editados sincronizados!`, 'sucesso');
         
     } catch (error) {
         console.error('Erro na sincronizacao CMD:', error);
@@ -2142,10 +2205,55 @@ function confirmarExclusao() {
         return;
     }
     
-    if (!confirm(`Excluir ${idsParaExcluir.length} ponto(s) selecionado(s)?`)) {
-        return;
-    }
+    const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
+    const pontosSelecionados = dadosLocais.filter(d => idsParaExcluir.includes(d.id));
     
+    mostrarPreviewExclusao(pontosSelecionados, idsParaExcluir);
+}
+
+function mostrarPreviewExclusao(pontos, idsParaExcluir) {
+    const modal = document.getElementById('modal-preview-sync');
+    const titulo = document.getElementById('preview-sync-titulo');
+    const subtitulo = document.getElementById('preview-sync-subtitulo');
+    const lista = document.getElementById('preview-lista');
+    const badgeNovos = document.getElementById('preview-novos');
+    const badgeEditados = document.getElementById('preview-editados');
+    const btnConfirmar = document.getElementById('btn-preview-confirmar');
+    const btnCancelar = document.getElementById('btn-preview-cancelar');
+    
+    titulo.textContent = 'Confirmar Exclusão';
+    subtitulo.textContent = 'Itens que serão removidos:';
+    
+    badgeNovos.style.display = 'none';
+    badgeEditados.style.display = 'none';
+    
+    let html = '';
+    pontos.forEach(dado => {
+        const nome = dado.campos?.PONTO || dado.campos?.CODIGO || dado.campos?.nome_proprietario || dado.id;
+        html += `<div class="preview-item">
+            <span class="preview-item-tipo preview-item-editado">EXCLUIR</span>
+            <span class="preview-item-nome">${nome}</span>
+        </div>`;
+    });
+    
+    lista.innerHTML = html;
+    
+    btnConfirmar.textContent = 'Excluir';
+    btnConfirmar.style.background = '#E74C3C';
+    
+    btnCancelar.onclick = () => {
+        modal.classList.remove('ativo');
+    };
+    
+    btnConfirmar.onclick = () => {
+        modal.classList.remove('ativo');
+        executarExclusao(idsParaExcluir);
+    };
+    
+    modal.classList.add('ativo');
+}
+
+function executarExclusao(idsParaExcluir) {
     const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
     App.dadosLocais[App.projetoAtual] = dadosLocais.filter(d => !idsParaExcluir.includes(d.id));
     salvarDadosLocais();

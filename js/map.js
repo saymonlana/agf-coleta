@@ -312,15 +312,22 @@ function criarPopupConteudo(dados, idSequencial) {
     let nomeCamada = '';
     let camposHtml = '';
     
+    // Buscar config da camada: primeiro Inventario, depois PAEBM (DADOS_CONFIG)
+    let configCamada = null;
     if (camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]) {
-        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
-        nomeCamada = configCamada.nome;
+        configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
+    } else if (camada && typeof DADOS_CONFIG !== 'undefined' && DADOS_CONFIG.camadas_coleta && DADOS_CONFIG.camadas_coleta[camada]) {
+        configCamada = DADOS_CONFIG.camadas_coleta[camada];
+    }
+    
+    if (configCamada) {
+        nomeCamada = configCamada.nome || camada;
         const camposMostrar = configCamada.campos || [];
         const temFuste = camposMostrar.some(c => c.tipo === 'fuste_grupo');
         const fustes = campos.fustes || [];
         
         camposHtml = camposMostrar.map(campo => {
-            if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO') return '';
+            if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO' || campo.nome === 'TECNICO') return '';
             if (campo.tipo === 'fuste_campo') return '';
             if (campo.tipo === 'fuste_grupo') {
                 if (temFuste && fustes.length > 0) {
@@ -349,11 +356,13 @@ function criarPopupConteudo(dados, idSequencial) {
     const statusClass = status === 'novo' ? 'pendente' : 'sincronizado';
     const editarBtn = `<button class="btn-editar-popup" onclick="editarPontoLocal('${dados.id}')">Editar</button>`;
     
+    const codigoPonto = campos.CODIGO || campos.PONTO || '';
+    
     return `
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
-                <h4>${nomeCamada || 'Ponto'}</h4>
-                <span>${camada || ''} - <span class="revisao-status ${statusClass}">${statusLabel}</span></span>
+                <h4>${nomeCamada || 'Ponto'}${codigoPonto ? ' - ' + codigoPonto : ''}</h4>
+                <span><span class="revisao-status ${statusClass}">${statusLabel}</span></span>
             </div>
             <div class="popup-corpo">
                 <p><strong>ID:</strong> ${idSequencial || ''}</p>
@@ -580,15 +589,22 @@ function criarPopupFeature(feature, camada, idSequencial) {
     let nomeCamada = '';
     let camposHtml = '';
     
+    // Buscar config da camada: primeiro Inventario, depois PAEBM (DADOS_CONFIG)
+    let configCamada = null;
     if (camada && typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[camada]) {
-        const configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
-        nomeCamada = configCamada.nome;
+        configCamada = DADOS_CONFIG_INVENTARIO.camadas[camada];
+    } else if (camada && typeof DADOS_CONFIG !== 'undefined' && DADOS_CONFIG.camadas_coleta && DADOS_CONFIG.camadas_coleta[camada]) {
+        configCamada = DADOS_CONFIG.camadas_coleta[camada];
+    }
+    
+    if (configCamada) {
+        nomeCamada = configCamada.nome || camada;
         const camposMostrar = configCamada.campos || [];
         const temFuste = camposMostrar.some(c => c.tipo === 'fuste_grupo');
         const fustes = props.fustes || [];
         
         camposHtml = camposMostrar.map(campo => {
-            if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO') return '';
+            if (campo.nome === 'DATA' || campo.nome === 'RESPONSAVEL_DE_CAMPO' || campo.nome === 'TECNICO') return '';
             if (campo.tipo === 'fuste_campo') return '';
             if (campo.tipo === 'fuste_grupo') {
                 if (temFuste && fustes.length > 0) {
@@ -621,11 +637,13 @@ function criarPopupFeature(feature, camada, idSequencial) {
     const featureId = props._id || '';
     const editarBtn = featureId ? `<button class="btn-editar-popup" onclick="editarPontoBox('${featureId}', '${camada}')">Editar</button>` : '';
     
+    const codigoPonto = props.CODIGO || props.PONTO || '';
+    
     return `
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
-                <h4>${nomeCamada || 'Ponto'}</h4>
-                <span>${camada || ''} - <span class="revisao-status sincronizado">Sincronizado</span></span>
+                <h4>${nomeCamada || 'Ponto'}${codigoPonto ? ' - ' + codigoPonto : ''}</h4>
+                <span><span class="revisao-status sincronizado">Sincronizado</span></span>
             </div>
             <div class="popup-corpo">
                 <p><strong>ID:</strong> ${idSequencial || ''}</p>

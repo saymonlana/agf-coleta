@@ -305,7 +305,11 @@ const InventarioState = {
     pontoTemp: null,
     parcelaExpandidaId: null,
     criandoParcela: false,
-    subParcelaEditando: null
+    subParcelaEditando: null,
+    parcelaDataPendente: null,
+    criandoIndividuo: false,
+    individuoPendente: null,
+    gpsIndividuoPendente: null
 };
 
 // ============================================
@@ -592,10 +596,10 @@ function confirmarExcluirParcela(parcelaId) {
 function abrirCriarParcela() {
     InventarioState.modoEdicao = false;
     InventarioState.parcelaAtual = null;
+    InventarioState.pontoTemp = App.currentPosition ? { lat: App.currentPosition.lat, lng: App.currentPosition.lng } : null;
 
-    // Primeiro abrir mapa para posicionar
-    InventarioState.telaAnterior = 'inventario';
-    abrirMapaParaInventario();
+    renderizarFormParcela(null);
+    mostrarTela('tela-criar-parcela-inv');
 }
 
 function abrirMapaParaInventario() {
@@ -864,12 +868,6 @@ function atualizarCamposCondicionaisParcela(container, metodo, fisionomia) {
 }
 
 function handleSalvarParcelaInv() {
-    const pos = InventarioState.pontoTemp;
-    if (!pos) {
-        mostrarToast('Posicao GPS nao definida', 'aviso');
-        return;
-    }
-
     const campos = {};
     ['metodo', 'nomeParcela', 'fisionomia', 'estagioSucessional', 'localidade', 'identificadorCampo',
      'responsavel', 'dataColeta', 'tamanhoParcelaArboreo', 'tamanhoParcelaArbustivo', 'tamanhoParcelaHerbaceo',
@@ -885,11 +883,12 @@ function handleSalvarParcelaInv() {
 
     // Validacao basica
     if (!campos.nomeParcela) {
-        if (campos.metodo === 'Censo') {
+        if (campos.metodo === 'Censo' || campos.metodo === 'Florística caminhamento') {
             const agora = new Date();
             const h = String(agora.getHours()).padStart(2, '0');
             const m = String(agora.getMinutes()).padStart(2, '0');
-            campos.nomeParcela = `Censo - ${campos.dataColeta || agora.toISOString().split('T')[0]} ${h}:${m}`;
+            const prefixo = campos.metodo === 'Censo' ? 'Censo' : 'Florística';
+            campos.nomeParcela = `${prefixo} - ${campos.dataColeta || agora.toISOString().split('T')[0]} ${h}:${m}`;
         } else {
             mostrarToast('Preencha o codigo da parcela', 'erro');
             return;
@@ -906,28 +905,35 @@ function handleSalvarParcelaInv() {
 
     if (InventarioState.modoEdicao && InventarioState.parcelaAtual) {
         // Atualizar
+        const pos = InventarioState.pontoTemp;
         InventarioDB.updateParcela({
             ...InventarioState.parcelaAtual,
             ...campos,
-            latitude: pos.lat,
-            longitude: pos.lng
+            latitude: pos ? pos.lat : null,
+            longitude: pos ? pos.lng : null
         });
         mostrarToast('Parcela atualizada', 'sucesso');
+        InventarioState.criandoParcela = false;
+        abrirTelaInventario();
+    } else if (campos.metodo === 'Parcela') {
+        // Parcela: salvar dados pendentes e abrir mapa para coletar GPS
+        InventarioState.parcelaDataPendente = campos;
+        InventarioState.criandoParcela = true;
+        mostrarToast('Agora colete o ponto GPS da parcela', 'info');
+        abrirMapaParaInventario();
     } else {
-        // Criar nova
+        // Censo / Floristica: salvar sem GPS (GPS sera coletado por individuo)
         const novaParcela = {
             ...campos,
-            latitude: pos.lat,
-            longitude: pos.lng,
+            latitude: null,
+            longitude: null,
             projetoId: App.projetoClienteAtual ? App.projetoClienteAtual.id : null
         };
         InventarioDB.insertParcela(novaParcela);
         mostrarToast('Parcela criada', 'sucesso');
+        InventarioState.criandoParcela = false;
+        abrirTelaInventario();
     }
-
-    // Voltar para home do inventario
-    InventarioState.criandoParcela = false;
-    abrirTelaInventario();
 }
 
 // ============================================
@@ -1137,14 +1143,32 @@ function abrirListaIndividuosInv(parcelaId, estrato) {
         html += '</tr>';
     });
 
-    html += '</tbody></table>';
+    html += '</tbody>';
+
+    html += '<tfoot><tr class="inv-sheet-footer">';
+    if (showFustes) html += `<td class="inv-cell inv-cell-add"><button class="inv-btn-add-inline" onclick="event.stopPropagation(); invAcaoNovoIndividuo('${parcelaId}', '${estrato}', '${fisionomia}')" title="Novo individuo">⊕</button></td>`;
+    if (showFustes) html += `<td class="inv-cell inv-cell-add"><button class="inv-btn-add-inline" onclick="event.stopPropagation(); invAcaoNovoFuste('${parcelaId}', '${estrato}', '${fisionomia}')" title="Novo fuste">⊕</button></td>`;
+    if (isHerbaceo) html += `<td class="inv-cell inv-cell-add"><button class="inv-btn-add-inline" onclick="event.stopPropagation(); invAcaoNovoIndividuo('${parcelaId}', '${estrato}', '${fisionomia}')" title="Novo individuo">⊕</button></td>`;
+    const footCols = (showFustes ? 2 : 0) + (isHerbaceo ? 1 : 0) + 5 + (requiresDiametroCopa ? 2 : 0) + (showFustes && estrato === 'Arbóreo' ? 1 : 0);
+    for (let i = 0; i < footCols; i++) html += '<td class="inv-cell inv-cell-add"></td>';
+    html += '</tr></tfoot>';
+
+    html += '</table>';
 
     container.innerHTML = html;
 
     configuraEventosSpreadsheet(container, parcelaId, estrato, fisionomia);
 
     document.getElementById('inventario-btn-novo-individuo').onclick = () => {
-        adicionarIndividuoNaPlanilha(parcelaId, estrato, fisionomia);
+        const metodo = parcela.metodo || 'Parcela';
+        if (metodo === 'Censo' || metodo === 'Florística caminhamento') {
+            InventarioState.criandoIndividuo = true;
+            InventarioState.individuoPendente = { parcelaId, estrato, fisionomia };
+            mostrarToast('Colete o GPS do individuo', 'info');
+            abrirMapaParaIndividuo();
+        } else {
+            adicionarIndividuoNaPlanilha(parcelaId, estrato, fisionomia);
+        }
     };
 
     mostrarTela('tela-inventario-lista-individuos');
@@ -1154,6 +1178,11 @@ function adicionarIndividuoNaPlanilha(parcelaId, estrato, fisionomia) {
     const proxNum = InventarioDB.getNextIndividuoNumero(parcelaId, estrato);
     const isHerbaceo = estrato === 'Herbáceo';
     const showFustes = !isHerbaceo && estrato !== 'Florística';
+
+    const gpsIndividuo = InventarioState.gpsIndividuoPendente;
+    InventarioState.gpsIndividuoPendente = null;
+    InventarioState.criandoIndividuo = false;
+    InventarioState.individuoPendente = null;
 
     const individuo = {
         id: InventarioDB._genId(),
@@ -1173,6 +1202,8 @@ function adicionarIndividuoNaPlanilha(parcelaId, estrato, fisionomia) {
         numeroGps: null,
         numeroIndividuos: null,
         numeroIndividuosEspecie: null,
+        latitude: gpsIndividuo ? gpsIndividuo.lat : null,
+        longitude: gpsIndividuo ? gpsIndividuo.lng : null,
         dataColeta: new Date().toISOString().split('T')[0]
     };
     InventarioDB.insertIndividuo(individuo);
@@ -1270,6 +1301,39 @@ function configuraEventosSpreadsheet(container, parcelaId, estrato, fisionomia) 
             }
         });
     });
+}
+
+function invAcaoNovoIndividuo(parcelaId, estrato, fisionomia) {
+    const parcela = InventarioDB.getParcela(parcelaId);
+    if (!parcela) return;
+    const metodo = parcela.metodo || 'Parcela';
+    if (metodo === 'Censo' || metodo === 'Florística caminhamento') {
+        InventarioState.criandoIndividuo = true;
+        InventarioState.individuoPendente = { parcelaId, estrato, fisionomia };
+        mostrarToast('Colete o GPS do individuo', 'info');
+        abrirMapaParaIndividuo();
+    } else {
+        adicionarIndividuoNaPlanilha(parcelaId, estrato, fisionomia);
+    }
+}
+
+function invAcaoNovoFuste(parcelaId, estrato, fisionomia) {
+    const individuos = InventarioDB.getIndividuosByParcelaEstrato(parcelaId, estrato);
+    if (individuos.length === 0) {
+        mostrarToast('Adicione um individuo primeiro', 'aviso');
+        return;
+    }
+    const ultimoInd = individuos[individuos.length - 1];
+    const fustes = InventarioDB.getFustesByIndividuo(ultimoInd.id);
+    const proximoNum = fustes.length + 1;
+    InventarioDB.insertFuste({
+        id: InventarioDB._genId(),
+        individuoId: ultimoInd.id,
+        numeroFuste: proximoNum,
+        altura: 0,
+        cap: 0
+    });
+    abrirListaIndividuosInv(parcelaId, estrato);
 }
 
 // ============================================
@@ -2340,14 +2404,60 @@ function exportarTodasParcelasCSV() {
 
 // Override: quando o mapa coleta um ponto no modo inventario
 function aoColetarPontoInventario(posicao) {
-    if (InventarioState.criandoParcela) {
-        InventarioState.pontoTemp = posicao;
+    if (InventarioState.criandoParcela && InventarioState.parcelaDataPendente) {
+        // Parcela: dados ja preenchidos no form, salvar com GPS coletado
+        const novaParcela = {
+            ...InventarioState.parcelaDataPendente,
+            latitude: posicao.lat,
+            longitude: posicao.lng,
+            projetoId: App.projetoClienteAtual ? App.projetoClienteAtual.id : null
+        };
+        InventarioDB.insertParcela(novaParcela);
+        InventarioState.parcelaDataPendente = null;
         InventarioState.criandoParcela = false;
-
-        // Voltar do mapa e abrir form de parcela
-        renderizarFormParcela(InventarioState.parcelaAtual);
-        mostrarTela('tela-criar-parcela-inv');
+        mostrarToast('Parcela criada', 'sucesso');
+        abrirTelaInventario();
+    } else if (InventarioState.criandoIndividuo && InventarioState.individuoPendente) {
+        // Individuo Censo: salvar GPS e abrir form
+        InventarioState.gpsIndividuoPendente = posicao;
+        const { parcelaId, estrato, fisionomia } = InventarioState.individuoPendente;
+        adicionarIndividuoNaPlanilha(parcelaId, estrato, fisionomia);
     }
+}
+
+function abrirMapaParaIndividuo() {
+    InventarioState.criandoParcela = false;
+
+    const btnColetar = document.getElementById('btn-coletar');
+    const crosshair = document.getElementById('crosshair');
+    if (btnColetar) {
+        btnColetar.style.display = 'flex';
+        btnColetar.style.background = '#0D4A35';
+    }
+    if (crosshair) crosshair.style.display = 'block';
+
+    mostrarTela('tela-mapa');
+
+    setTimeout(() => {
+        if (!mapa) {
+            if (typeof inicializarMapa === 'function') {
+                inicializarMapa(-19.056, -43.374);
+            }
+        } else {
+            mapa.invalidateSize();
+            mapa.setView([-19.056, -43.374], 15);
+        }
+        if (typeof carregarCamadasInventario === 'function') {
+            carregarCamadasInventario();
+        }
+        if (typeof carregarPontosNoMapa === 'function') {
+            carregarPontosNoMapa();
+        }
+        if (App.currentPosition) {
+            document.getElementById('coordenadas-mapa').textContent =
+                `Lat: ${App.currentPosition.lat.toFixed(6)} | Lon: ${App.currentPosition.lng.toFixed(6)}`;
+        }
+    }, 300);
 }
 
 // ============================================
@@ -2368,6 +2478,47 @@ function configurarEventListenersInventario() {
     // Botao exportar tudo
     document.getElementById('inventario-btn-exportar-tudo')?.addEventListener('click', () => {
         exportarTodasParcelasCSV();
+    });
+
+    // Botao sincronizar com Box (enviar dados coletados)
+    document.getElementById('inventario-btn-sync-box')?.addEventListener('click', () => {
+        if (typeof sincronizarInventario === 'function') {
+            sincronizarInventario();
+        } else {
+            mostrarToast('Funcao de sincronizacao nao disponivel', 'erro');
+        }
+    });
+
+    // Botao ver no mapa (baixa dados do Box para visualizacao)
+    document.getElementById('inventario-btn-mapa')?.addEventListener('click', () => {
+        InventarioState.telaAnterior = 'inventario';
+        const btnColetar = document.getElementById('btn-coletar');
+        const crosshair = document.getElementById('crosshair');
+        if (btnColetar) btnColetar.style.display = 'none';
+        if (crosshair) crosshair.style.display = 'none';
+        mostrarTela('tela-mapa');
+        setTimeout(() => {
+            if (!mapa) {
+                if (typeof inicializarMapa === 'function') {
+                    inicializarMapa(-19.056, -43.374);
+                }
+            } else {
+                mapa.invalidateSize();
+                mapa.setView([-19.056, -43.374], 15);
+                if (typeof camadasInventarioCarregadas !== 'undefined') {
+                    camadasInventarioCarregadas = false;
+                }
+            }
+            if (typeof carregarCamadasInventario === 'function') {
+                carregarCamadasInventario();
+            }
+            if (typeof carregarInventarioDoBox === 'function') {
+                carregarInventarioDoBox();
+            }
+            if (typeof carregarPontosNoMapa === 'function') {
+                carregarPontosNoMapa();
+            }
+        }, 300);
     });
 
     // Salvar parcela
