@@ -23,7 +23,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     
     <!-- CSS do App -->
-    <link rel="stylesheet" href="css/style.css?v=3">
+    <link rel="stylesheet" href="css/style.css?v=4">
     
     <!-- Manifest PWA -->
     <link rel="manifest" href="manifest.json">
@@ -223,6 +223,13 @@
                     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
             </button>
+            <button id="btn-status-offline" class="btn-icon btn-status-offline status-sem" title="Mapa offline">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+            </button>
         </header>
         
         <!-- Botao de Camadas (Inventario) -->
@@ -242,6 +249,21 @@
             </div>
             <div class="painel-camadas-lista" id="lista-camadas">
                 <!-- Camadas serao preenchidas dinamicamente -->
+            </div>
+            <div class="secao-offline" id="secao-offline">
+                <div class="secao-offline-titulo">Mapa offline</div>
+                <div class="offline-info" id="offline-info"></div>
+                <button type="button" id="btn-baixar-area" class="btn-baixar-area">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Baixar esta area
+                </button>
+                <div class="offline-lista-titulo">Baixadas</div>
+                <div class="offline-lista-areas" id="offline-lista-areas"></div>
+                <button type="button" id="btn-limpar-offline" class="btn-limpar-offline">Limpar tudo</button>
             </div>
         </div>
         
@@ -498,18 +520,19 @@
 
     <!-- ========== MODAL EXCLUSAO ========== -->
     <div id="modal-exclusao" class="modal">
-        <div class="modal-content modal-revisao">
-            <div class="revisao-cabecalho">
-                <h3>Excluir dados coletados</h3>
-                <p id="exclusao-resumo"></p>
-                <label class="exclusao-todos-label">
-                    <input type="checkbox" id="exclusao-marcar-todos" checked> Marcar todos
-                </label>
+        <div class="modal-content modal-preview">
+            <h3>Excluir dados coletados</h3>
+            <p id="exclusao-subtitulo">Pontos coletados ainda não enviados ao Box</p>
+            <div class="preview-resumo">
+                <span class="preview-badge preview-editados" id="exclusao-resumo">0 itens</span>
             </div>
-            <div id="exclusao-lista" class="revisao-lista"></div>
-            <div class="revisao-rodape">
-                <button id="btn-cancelar-exclusao" class="btn-secundario">Cancelar</button>
-                <button id="btn-confirmar-exclusao" class="btn-excluir">Excluir Selecionados</button>
+            <label class="exclusao-todos-label">
+                <input type="checkbox" id="exclusao-marcar-todos" checked> Marcar todos
+            </label>
+            <div id="exclusao-lista" class="preview-lista"></div>
+            <div class="preview-botoes">
+                <button id="btn-cancelar-exclusao" class="btn-preview-cancelar">Cancelar</button>
+                <button id="btn-confirmar-exclusao" class="btn-preview-confirmar btn-excluir">Excluir</button>
             </div>
         </div>
     </div>
@@ -837,6 +860,17 @@
     <div id="toast" class="toast"></div>
     <div id="toast-persistente" class="toast-persistente"></div>
 
+    <!-- ========== PROGRESSO MAPA OFFLINE ========== -->
+    <div id="progresso-offline" class="progresso-offline" style="display: none;">
+        <div class="progresso-offline-topo">
+            <span id="progresso-offline-texto">Baixando mapa...</span>
+            <button type="button" id="btn-progresso-offline-cancelar" class="btn-progresso-cancelar" title="Cancelar">&times;</button>
+        </div>
+        <div class="progresso-offline-barra">
+            <div id="progresso-offline-fill" class="progresso-offline-fill"></div>
+        </div>
+    </div>
+
     <!-- Dados embutidos (para funcionar sem servidor) -->
     <script src="dados/projetos.js"></script>
     <script src="dados/config.js"></script>
@@ -847,6 +881,9 @@
     <script src="dados/Animais_Silvestres_Exoticos_PAEBM_SAG.js"></script>
     <script src="dados/Producao_Agropecuaria_PAEBM_SAG.js"></script>
     <script src="dados/Centro_Urbano.js"></script>
+    <script src="dados/Municipios_PAEBM_CMD.js"></script>
+    <script src="dados/Manchas_RC_PAEBM.js"></script>
+    <script src="dados/Acessos_Secundarios.js"></script>
     <script src="Inventario_Florestal/Propriedades_NES.js"></script>
     <script src="Inventario_Florestal/Quadrantes.js"></script>
     
@@ -856,5 +893,6 @@
     <script src="js/app.js?t=20260825"></script>
     <script src="js/map.js?t=20260825"></script>
     <script src="js/inventario.js?t=20260904"></script>
+    <script src="js/offline-map.js?t=20260922"></script>
 </body>
 </html>

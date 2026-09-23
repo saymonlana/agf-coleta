@@ -36,7 +36,7 @@ function inicializarMapa(lat, lng) {
     });
     
     // Camada de ruas (OpenStreetMap)
-    streetsLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    streetsLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
         crossOrigin: true
@@ -211,6 +211,157 @@ function removerCamadasInventario() {
 }
 
 // ============================================
+// CAMADAS DO CMD (LIMITES MUNICIPAIS + BASE)
+// ============================================
+
+let camadasCmdCarregadas = false;
+
+const NOMES_CAMADAS_CMD = ['Limites Municipais', 'Diques', 'ZAS', 'ZSS', 'Acessos Secundários'];
+
+function carregarCamadasCmd() {
+    if (!mapa) return;
+    if (camadasCmdCarregadas) return;
+    if (typeof DADOS_MUNICIPIOS_CMD === 'undefined' || !DADOS_MUNICIPIOS_CMD.features) return;
+    
+    const layerMunicipios = L.geoJSON(DADOS_MUNICIPIOS_CMD, {
+        interactive: false,
+        style: function(feature) {
+            return { color: '#FFD700', weight: 2.5, fillColor: '#FFD700', fillOpacity: 0.06 };
+        }
+    });
+    camadasOverlay['Limites Municipais'] = layerMunicipios;
+    layerMunicipios.addTo(mapa);
+    
+    // Rótulo permanente com o nome do municipio no centro
+    layerMunicipios.eachLayer(function(layer) {
+        if (layer.getBounds) {
+            const centro = layer.getBounds().getCenter();
+            L.marker(centro, {
+                icon: L.divIcon({
+                    className: 'label-municipio',
+                    html: `<span>${layer.feature.properties.nome || ''}</span>`,
+                    iconSize: null
+                }),
+                interactive: false
+            }).addTo(mapa);
+        }
+    });
+    
+    // Manchas RC subdividido: Manchas RC (laranja), ZAS (marrom), ZSS (marrom claro)
+    if (typeof DADOS_MANCHAS_RC_PAEBM !== 'undefined' && DADOS_MANCHAS_RC_PAEBM.features) {
+        const ehZas = f => /autossalvamento/i.test((f.properties && f.properties.nome) || '');
+        const ehZss = f => /secund/i.test((f.properties && f.properties.nome) || '');
+        const naoZona = f => !ehZas(f) && !ehZss(f);
+
+        const filtrar = filtro => ({
+            type: 'FeatureCollection',
+            features: DADOS_MANCHAS_RC_PAEBM.features.filter(f => {
+                if (filtro === naoZona && f.geometry && f.geometry.type === 'Point') return true;
+                return filtro(f);
+            })
+        });
+
+        const bindPopupManchas = function(feature, layer) {
+            const p = feature.properties || {};
+            if (p.nome || p.Descricao || p.Area_ha) {
+                const linhas = [];
+                if (p.nome) linhas.push(`<b>${p.nome}</b>`);
+                if (p.Descricao && p.Descricao !== p.nome) linhas.push(p.Descricao);
+                if (p.Area_ha) linhas.push(`Área: ${p.Area_ha} ha`);
+                layer.bindPopup(linhas.join('<br>'));
+            }
+        };
+
+        // Diques - vermelho (realçado)
+        const layerManchas = L.geoJSON(filtrar(naoZona), {
+            style: { color: '#B03A2E', weight: 3, fillColor: '#E74C3C', fillOpacity: 0.45 },
+            pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng, {
+                    radius: 7,
+                    color: '#B03A2E',
+                    fillColor: '#E74C3C',
+                    fillOpacity: 0.9,
+                    weight: 2
+                });
+            },
+            onEachFeature: bindPopupManchas
+        });
+        camadasOverlay['Diques'] = layerManchas;
+        layerManchas.addTo(mapa);
+
+        // ZAS - marrom (realçado)
+        const layerZas = L.geoJSON(filtrar(ehZas), {
+            style: { color: '#6B3F1D', weight: 3, fillColor: '#8B5A2B', fillOpacity: 0.45 },
+            onEachFeature: bindPopupManchas
+        });
+        camadasOverlay['ZAS'] = layerZas;
+        layerZas.addTo(mapa);
+
+        // ZSS - laranja (realçado)
+        const layerZss = L.geoJSON(filtrar(ehZss), {
+            style: { color: '#C05A00', weight: 3, fillColor: '#E67E22', fillOpacity: 0.45 },
+            onEachFeature: bindPopupManchas
+        });
+        camadasOverlay['ZSS'] = layerZss;
+        layerZss.addTo(mapa);
+    }
+    
+    // Acessos Secundários (rotas/vias) - cinza
+    if (typeof DADOS_ACESSOS_SECUNDARIOS !== 'undefined' && DADOS_ACESSOS_SECUNDARIOS.features) {
+        const layerAcessos = L.geoJSON(DADOS_ACESSOS_SECUNDARIOS, {
+            style: { color: '#D9D9D9', weight: 2, opacity: 0.9 },
+            onEachFeature: function(feature, layer) {
+                const p = feature.properties || {};
+                if (p.nome) layer.bindPopup(`<b>${p.nome}</b>`);
+            }
+        });
+        camadasOverlay['Acessos Secundários'] = layerAcessos;
+        layerAcessos.addTo(mapa);
+    }
+    
+    // Atualizar controle de camadas
+    if (layerControl) {
+        mapa.removeControl(layerControl);
+    }
+    layerControl = L.control.layers({
+        'Satelite': satelliteLayer,
+        'Ruas': streetsLayer
+    }, camadasOverlay).addTo(mapa);
+    
+    camadasCmdCarregadas = true;
+    console.log('Camadas CMD carregadas (limites + manchas + acessos)');
+}
+
+function removerCamadasCmd() {
+    if (!mapa) return;
+    
+    Object.keys(camadasOverlay).forEach(nome => {
+        if (NOMES_CAMADAS_CMD.indexOf(nome) !== -1) {
+            mapa.removeLayer(camadasOverlay[nome]);
+            delete camadasOverlay[nome];
+        }
+    });
+    
+    // Remover rotulos dos municipios
+    mapa.eachLayer(function(layer) {
+        const icone = layer.options && layer.options.icon;
+        if (icone && icone.options && icone.options.className === 'label-municipio') {
+            mapa.removeLayer(layer);
+        }
+    });
+    
+    if (layerControl) {
+        mapa.removeControl(layerControl);
+    }
+    layerControl = L.control.layers({
+        'Satelite': satelliteLayer,
+        'Ruas': streetsLayer
+    }, camadasOverlay).addTo(mapa);
+    
+    camadasCmdCarregadas = false;
+}
+
+// ============================================
 // MARCADORES
 // ============================================
 
@@ -294,6 +445,18 @@ function adicionarPontoNoMapa(dados, idSequencial) {
         maxWidth: 300,
         className: 'popup-ponto'
     });
+    
+    // Rótulo permanente com o código do ponto (somente CMD - Anglo American)
+    const codigoPonto = campos.CODIGO || campos.PONTO || '';
+    if (codigoPonto && dados.camada === 'Questionario_FAUNA_ERRANTE_CMD') {
+        marcador.bindTooltip(codigoPonto, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -10],
+            className: 'label-ponto',
+            opacity: 1
+        });
+    }
     
     // Guardar referência
     dados._marcador = marcador;
@@ -571,6 +734,18 @@ function adicionarFeatureNoMapa(feature, lat, lng, idSequencial) {
         className: 'popup-ponto'
     });
     
+    // Rótulo permanente com o código do ponto (somente CMD - Anglo American)
+    const codigoPonto = props.CODIGO || props.PONTO || '';
+    if (codigoPonto && camada === 'Questionario_FAUNA_ERRANTE_CMD') {
+        marcador.bindTooltip(codigoPonto, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -10],
+            className: 'label-ponto',
+            opacity: 1
+        });
+    }
+    
     marcadores.push(marcador);
 }
 
@@ -717,6 +892,44 @@ estiloMarcadores.textContent = `
         border: 2px solid white;
         border-radius: 50%;
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .label-ponto {
+        background: rgba(255, 255, 255, 0.92) !important;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 1px 5px;
+        font-size: 10px;
+        font-weight: 600;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #333;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        white-space: nowrap;
+    }
+    
+    .label-ponto::before {
+        border-top-color: rgba(255, 255, 255, 0.92) !important;
+    }
+    
+    .label-municipio {
+        background: transparent !important;
+        border: none;
+        box-shadow: none;
+    }
+    
+    .label-municipio span {
+        display: inline-block;
+        background: rgba(44, 62, 80, 0.85);
+        color: #fff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 12px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+        white-space: nowrap;
+        letter-spacing: 0.3px;
     }
     
     .popup-conteudo {

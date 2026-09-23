@@ -1,5 +1,5 @@
 {
-    "version": 5,
+    "version": 6,
     "url": "https://agf-coleta.onrender.com",
     "files": [
         "index.html",
@@ -10,6 +10,9 @@
         "js/sync.js",
         "js/map.js",
         "dados/config_inventario.js",
+        "dados/Municipios_PAEBM_CMD.js",
+        "dados/Manchas_RC_PAEBM.js",
+        "dados/Acessos_Secundarios.js",
         "img/logo_192.png",
         "img/logo_512.png",
         "Inventario_Florestal/Propriedades_NES.js",

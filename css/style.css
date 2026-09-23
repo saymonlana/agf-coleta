@@ -942,6 +942,65 @@ html, body {
     background: var(--verde-escuro);
 }
 
+.preview-item-checkbox {
+    gap: 0;
+}
+
+.preview-item-checkbox > input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #E74C3C;
+}
+
+.preview-item-cor {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.preview-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.preview-item-info .preview-item-nome {
+    flex: initial;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.preview-item-detalhes {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.modal-preview .exclusao-todos-label {
+    margin: 0 0 10px 12px;
+}
+
+.btn-preview-confirmar.btn-excluir {
+    background: #E74C3C;
+}
+
+.btn-preview-confirmar.btn-excluir:hover {
+    background: #C0392B;
+}
+
+.btn-preview-confirmar.btn-excluir:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
 /* ============================================
    MODAL REVISAO
    ============================================ */
@@ -1564,7 +1623,7 @@ html, body {
     left: 10px;
     z-index: 999;
     width: 260px;
-    max-height: 400px;
+    max-height: min(560px, calc(100vh - 90px));
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -3659,4 +3718,233 @@ html, body {
     outline: none;
     border-color: var(--verde-escuro, #2e7d32);
     border-width: 2px;
+}
+
+
+/* ============================================
+   MAPA OFFLINE (tiles em cache)
+   ============================================ */
+
+.btn-status-offline.status-sem {
+    opacity: 0.55;
+}
+
+.btn-status-offline.status-ok {
+    background: rgba(46, 204, 113, 0.35);
+    color: #2ecc71;
+}
+
+.btn-status-offline.status-baixando {
+    background: rgba(241, 196, 15, 0.35);
+    color: #f1c40f;
+    animation: pulse-offline 1s infinite;
+}
+
+@keyframes pulse-offline {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.secao-offline {
+    border-top: 1px solid #e0e0e0;
+    padding: 10px 12px 12px;
+    background: #fafafa;
+    flex-shrink: 0;
+}
+
+.secao-offline-titulo {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--verde-escuro, #0D4A35);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.offline-info {
+    margin-bottom: 8px;
+}
+
+.offline-linha {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #555;
+    padding: 2px 0;
+}
+
+.offline-linha strong {
+    color: #222;
+    font-weight: 600;
+}
+
+.btn-baixar-area {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--verde-escuro, #0D4A35);
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-baixar-area:hover:not(:disabled) {
+    background: #0a3a28;
+}
+
+.btn-baixar-area:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.offline-lista-titulo {
+    font-size: 11px;
+    font-weight: 600;
+    color: #888;
+    text-transform: uppercase;
+    margin: 10px 0 4px;
+}
+
+.offline-lista-areas {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.offline-vazio {
+    font-size: 12px;
+    color: #999;
+    padding: 6px 0;
+    font-style: italic;
+}
+
+.offline-area-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: white;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    margin-bottom: 4px;
+}
+
+.offline-area-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.offline-area-nome {
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.offline-area-meta {
+    font-size: 10px;
+    color: #888;
+}
+
+.offline-area-remover {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.offline-area-remover:hover {
+    background: rgba(231, 76, 60, 0.25);
+}
+
+.btn-limpar-offline {
+    width: 100%;
+    margin-top: 8px;
+    padding: 7px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    color: #c0392b;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.btn-limpar-offline:hover {
+    background: #fff5f5;
+}
+
+/* Progresso flutuante do download */
+.progresso-offline {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3000;
+    width: min(92vw, 360px);
+    background: rgba(20, 30, 25, 0.95);
+    color: white;
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.progresso-offline-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+#progresso-offline-texto {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-progresso-cancelar {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.btn-progresso-cancelar:hover {
+    background: rgba(231, 76, 60, 0.6);
+}
+
+.progresso-offline-barra {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progresso-offline-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    border-radius: 4px;
+    transition: width 0.2s;
 }

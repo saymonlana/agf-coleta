@@ -615,6 +615,9 @@ function abrirMapaParaInventario() {
     }
     if (crosshair) crosshair.style.display = 'block';
 
+    const btnCamadas = document.getElementById('btn-camadas');
+    if (btnCamadas) btnCamadas.style.display = 'flex';
+
     // Abrir tela do mapa
     mostrarTela('tela-mapa');
 
@@ -2436,6 +2439,9 @@ function abrirMapaParaIndividuo() {
     }
     if (crosshair) crosshair.style.display = 'block';
 
+    const btnCamadas = document.getElementById('btn-camadas');
+    if (btnCamadas) btnCamadas.style.display = 'flex';
+
     mostrarTela('tela-mapa');
 
     setTimeout(() => {
@@ -2496,6 +2502,8 @@ function configurarEventListenersInventario() {
         const crosshair = document.getElementById('crosshair');
         if (btnColetar) btnColetar.style.display = 'none';
         if (crosshair) crosshair.style.display = 'none';
+        const btnCamadas = document.getElementById('btn-camadas');
+        if (btnCamadas) btnCamadas.style.display = 'flex';
         mostrarTela('tela-mapa');
         setTimeout(() => {
             if (!mapa) {

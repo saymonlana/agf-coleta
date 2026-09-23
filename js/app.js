@@ -917,7 +917,7 @@ async function abrirProjeto(projetoId) {
     
     const btnCamadas = document.getElementById('btn-camadas');
     if (btnCamadas) {
-        btnCamadas.style.display = projetoId === 'inventario' ? 'flex' : 'none';
+        btnCamadas.style.display = 'flex';
     }
     
     const btnColetar = document.getElementById('btn-coletar');
@@ -966,8 +966,10 @@ async function abrirProjeto(projetoId) {
         carregarCamadasInventario();
     } else if (isCmd) {
         carregarCmdDoBox();
+        carregarCamadasCmd();
     } else {
         removerCamadasInventario();
+        removerCamadasCmd();
     }
     
     carregarPontosNoMapa();
@@ -1303,7 +1305,7 @@ function gerarCamposFormulario() {
     
     // Para CMD: preencher municipio via reverse geocoding
     if (isCmd) {
-        const posicao = App.currentPosition || App.crosshairPosition;
+        const posicao = App.crosshairPosition || App.currentPosition;
         if (posicao) {
             buscarEnderecoPorCoordenadas(posicao.lat, posicao.lng).then(resultado => {
                 if (!resultado || !resultado.municipio) return;
@@ -2458,13 +2460,15 @@ const CamadasConfig = {
 };
 
 function inicializarPainelCamadas() {
-    if (typeof DADOS_CONFIG_INVENTARIO === 'undefined') return;
-    
     const container = document.getElementById('lista-camadas');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
+    if (typeof DADOS_CONFIG_INVENTARIO === 'undefined' || App.projetoAtual !== 'inventario') {
+        return;
+    }
+
     const camadas = DADOS_CONFIG_INVENTARIO.camadas;
     
     Object.keys(camadas).forEach(nomeCamada => {
@@ -2518,6 +2522,9 @@ function abrirPainelCamadas() {
         painel.style.display = 'flex';
         if (btn) btn.style.display = 'none';
         inicializarPainelCamadas();
+        if (typeof inicializarSecaoOffline === 'function') {
+            inicializarSecaoOffline();
+        }
     }
 }
 

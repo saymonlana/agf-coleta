@@ -398,6 +398,241 @@ async function baixarArquivoBox(fileId) {
 }
 
 // ============================================
+// TRAVA DE SINCRONIZACAO + ETAG
+// ============================================
+
+const TRAVA_NOME_ARQUIVO = 'sync.lock';
+const TRAVA_TTL_MS = 5 * 60 * 1000;
+const TRAVA_POLL_MS = 5000;
+const TRAVA_MAX_ESPERA_MS = 15 * 60 * 1000;
+const TRAVA_HEARTBEAT_MS = 2 * 60 * 1000;
+
+const dispositivo_id = (function() {
+    try {
+        let id = localStorage.getItem('agf_dispositivo_id');
+        if (!id) {
+            id = 'disp_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+            localStorage.setItem('agf_dispositivo_id', id);
+        }
+        return id;
+    } catch (e) {
+        return 'disp_' + Date.now().toString(36);
+    }
+})();
+
+const TravaSync = {
+    file_id: null,
+    folder_id: null,
+    etag: null,
+    timer: null,
+    usuario: null,
+    iniciado_em: null,
+    dispositivo_id: dispositivo_id
+};
+
+function dormir(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function obterEtagArquivo(fileId) {
+    if (!await verificarToken()) return null;
+    try {
+        const data = await boxFetch(
+            `https://api.box.com/2.0/files/${fileId}?fields=etag`,
+            { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+        );
+        return data.etag || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+async function listarItemTrava(folderId) {
+    if (!await verificarToken()) return null;
+    const data = await boxFetch(
+        `https://api.box.com/2.0/folders/${folderId}/items?limit=1000&fields=name,id,etag`,
+        { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+    );
+    return (data.entries || []).find(i => i.type === 'file' && i.name === TRAVA_NOME_ARQUIVO) || null;
+}
+
+async function escreverTravaSync(folderId, fileId, conteudo, etag) {
+    if (!await verificarToken()) return { erro: 'token' };
+    const attributes = { name: TRAVA_NOME_ARQUIVO, parent: { id: folderId } };
+    const url = fileId
+        ? `https://upload.box.com/api/2.0/files/${fileId}/content`
+        : 'https://upload.box.com/api/2.0/files/content';
+    const headers = { 'Authorization': 'Bearer ' + Sync.access_token };
+    if (fileId && etag) {
+        headers['If-Match'] = etag;
+    }
+    try {
+        const base64 = btoa(unescape(encodeURIComponent(conteudo)));
+        const resp = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: url,
+                method: 'POST',
+                headers: headers,
+                upload: true,
+                attributes: JSON.stringify(attributes),
+                fileBase64: base64,
+                fileName: TRAVA_NOME_ARQUIVO
+            })
+        });
+        if (resp.status === 412 || resp.status === 409) {
+            return { conflito: true };
+        }
+        if (!resp.ok) {
+            return { erro: resp.status };
+        }
+        let data = null;
+        try { data = await resp.json(); } catch (e) {}
+        const entry = data && data.entries && data.entries[0];
+        if (!entry) return { erro: 'resposta' };
+        return { id: entry.id, etag: entry.etag || null };
+    } catch (e) {
+        return { erro: e.message || 'excecao' };
+    }
+}
+
+async function adquirirTravaSync(folderId, aoStatus) {
+    if (!await verificarToken()) {
+        throw new Error('Token do Box invalido.');
+    }
+    const inicio = Date.now();
+    let item;
+    try {
+        item = await listarItemTrava(folderId);
+    } catch (e) {
+        throw new Error('Erro ao verificar trava de sincronizacao.');
+    }
+
+    while (true) {
+        if (Date.now() - inicio > TRAVA_MAX_ESPERA_MS) {
+            throw new Error('Tempo esgotado aguardando a liberacao da trava de sincronizacao.');
+        }
+
+        let conteudoAtual = null;
+        let etagAtual = item ? (item.etag || null) : null;
+        const fileId = item ? item.id : null;
+
+        if (fileId) {
+            const br = await baixarArquivoBox(fileId);
+            if (br && typeof br === 'object') {
+                conteudoAtual = br;
+            } else if (typeof br === 'string') {
+                try { conteudoAtual = JSON.parse(br); } catch (e) { conteudoAtual = null; }
+            }
+            if (!etagAtual) etagAtual = await obterEtagArquivo(fileId);
+        }
+
+        const agora = Date.now();
+        const expira = (conteudoAtual && conteudoAtual.expira_em)
+            ? new Date(conteudoAtual.expira_em).getTime()
+            : 0;
+        const estaLivre = !conteudoAtual || conteudoAtual.trava !== true || expira <= agora;
+        const eNossa = !!(conteudoAtual && conteudoAtual.trava === true &&
+            conteudoAtual.dispositivo_id === dispositivo_id);
+
+        if (estaLivre || eNossa) {
+            const usuario = (typeof App !== 'undefined' && App.usuario &&
+                (App.usuario.nome || App.usuario.email)) || 'tecnico';
+            const payload = {
+                trava: true,
+                dispositivo_id: dispositivo_id,
+                usuario: usuario,
+                iniciado_em: (eNossa && conteudoAtual.iniciado_em) ? conteudoAtual.iniciado_em : new Date().toISOString(),
+                expira_em: new Date(agora + TRAVA_TTL_MS).toISOString()
+            };
+            const r = await escreverTravaSync(folderId, fileId, JSON.stringify(payload), fileId ? etagAtual : null);
+            if (r && r.id && !r.conflito && r.erro === undefined) {
+                TravaSync.file_id = r.id;
+                TravaSync.folder_id = folderId;
+                TravaSync.etag = r.etag || null;
+                TravaSync.usuario = usuario;
+                TravaSync.iniciado_em = payload.iniciado_em;
+                iniciarHeartbeatTrava();
+                return true;
+            }
+            if (r && r.conflito) {
+                try {
+                    item = await listarItemTrava(folderId);
+                } catch (e) {
+                    item = null;
+                }
+                if (aoStatus) aoStatus('Outro dispositivo assumiu a trava. Aguardando liberacao...');
+                await dormir(TRAVA_POLL_MS);
+                continue;
+            }
+            throw new Error('Erro ao gravar trava de sincronizacao' + (r && r.erro ? ' (HTTP ' + r.erro + ')' : '') + '.');
+        }
+
+        const quem = (conteudoAtual && conteudoAtual.usuario) || 'outro tecnico';
+        const restante = Math.max(0, Math.ceil((expira - agora) / 1000));
+        if (aoStatus) {
+            aoStatus('Aguardando ' + quem + ' concluir a sincronizacao... (' + restante + 's)');
+        }
+        try {
+            item = await listarItemTrava(folderId) || item;
+        } catch (e) {}
+        await dormir(TRAVA_POLL_MS);
+    }
+}
+
+function pararHeartbeatTrava() {
+    if (TravaSync.timer) {
+        clearInterval(TravaSync.timer);
+        TravaSync.timer = null;
+    }
+}
+
+function iniciarHeartbeatTrava() {
+    pararHeartbeatTrava();
+    TravaSync.timer = setInterval(async () => {
+        if (!TravaSync.file_id || !TravaSync.folder_id) return;
+        try {
+            const payload = {
+                trava: true,
+                dispositivo_id: dispositivo_id,
+                usuario: TravaSync.usuario || 'tecnico',
+                iniciado_em: TravaSync.iniciado_em || new Date().toISOString(),
+                expira_em: new Date(Date.now() + TRAVA_TTL_MS).toISOString()
+            };
+            const r = await escreverTravaSync(
+                TravaSync.folder_id,
+                TravaSync.file_id,
+                JSON.stringify(payload),
+                TravaSync.etag
+            );
+            if (r && r.etag) TravaSync.etag = r.etag;
+        } catch (e) {}
+    }, TRAVA_HEARTBEAT_MS);
+}
+
+async function liberarTravaSync() {
+    pararHeartbeatTrava();
+    const fileId = TravaSync.file_id;
+    const folderId = TravaSync.folder_id;
+    const etag = TravaSync.etag;
+    TravaSync.file_id = null;
+    TravaSync.folder_id = null;
+    TravaSync.etag = null;
+    TravaSync.usuario = null;
+    TravaSync.iniciado_em = null;
+    if (!fileId || !folderId) return;
+    try {
+        const payload = {
+            trava: false,
+            dispositivo_id: dispositivo_id,
+            liberado_em: new Date().toISOString()
+        };
+        await escreverTravaSync(folderId, fileId, JSON.stringify(payload), etag);
+    } catch (e) {}
+}
+
+// ============================================
 // SINCRONIZACAO PRINCIPAL
 // ============================================
 
@@ -747,6 +982,7 @@ const InventarioSync = {
     geojson_folder_id: '400216557385',
     file_ids: {},
     kml_file_ids: {},
+    etags: {},
     excel_file_id: localStorage.getItem('agf_excel_file_id') || null
 };
 
@@ -758,7 +994,8 @@ const CmdSync = {
     folder_id: '413710880404',
     excel_file_id: null,
     kml_file_id: null,
-    file_ids: {}
+    file_ids: {},
+    etags: {}
 };
 
 const CMD_EXCEL_API_URL = (location.protocol === 'file:' || location.hostname === '')
@@ -832,6 +1069,11 @@ async function baixarGeoJSONCmd(nomeArquivo) {
         return null;
     }
     
+    const etagAtual = await obterEtagArquivo(fileId);
+    if (etagAtual) {
+        CmdSync.etags[nomeArquivo] = etagAtual;
+    }
+    
     try {
         const resp = await fetch(PROXY_URL, {
             method: 'POST',
@@ -866,6 +1108,7 @@ async function salvarGeoJSONCmd(nomeArquivo, dados) {
     if (!await verificarToken()) return null;
     
     const fileId = CmdSync.file_ids[nomeArquivo];
+    const etagConhecida = CmdSync.etags[nomeArquivo] || null;
     const nomeCompleto = nomeArquivo.endsWith('.geojson') ? nomeArquivo : nomeArquivo + '.geojson';
     const conteudo = JSON.stringify(dados, null, 2);
     const attributes = { name: nomeCompleto, parent: { id: CmdSync.folder_id } };
@@ -873,6 +1116,11 @@ async function salvarGeoJSONCmd(nomeArquivo, dados) {
     const url = fileId
         ? `https://upload.box.com/api/2.0/files/${fileId}/content`
         : 'https://upload.box.com/api/2.0/files/content';
+    
+    const headers = { 'Authorization': 'Bearer ' + Sync.access_token };
+    if (fileId && etagConhecida) {
+        headers['If-Match'] = etagConhecida;
+    }
     
     try {
         const base64 = btoa(unescape(encodeURIComponent(conteudo)));
@@ -883,7 +1131,7 @@ async function salvarGeoJSONCmd(nomeArquivo, dados) {
             body: JSON.stringify({
                 url: url,
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + Sync.access_token },
+                headers: headers,
                 upload: true,
                 attributes: JSON.stringify(attributes),
                 fileBase64: base64,
@@ -891,13 +1139,23 @@ async function salvarGeoJSONCmd(nomeArquivo, dados) {
             })
         });
         
+        if (resp.status === 412 || resp.status === 409) {
+            console.warn('GeoJSON CMD mudou no Box (conflito etag):', resp.status);
+            return { conflito: true };
+        }
+        
         const result = await resp.json();
-        if (result.entries) {
+        if (resp.ok && result.entries) {
             CmdSync.file_ids[nomeArquivo] = result.entries[0].id;
+            if (result.entries[0].etag) {
+                CmdSync.etags[nomeArquivo] = result.entries[0].etag;
+            }
             salvarCacheCmdFileIds(CmdSync.file_ids);
             console.log('GeoJSON CMD salvo:', nomeCompleto);
+            return result;
         }
-        return result;
+        console.error('Erro ao salvar GeoJSON CMD:', resp.status, result);
+        return null;
     } catch (e) {
         console.error('Erro ao salvar GeoJSON CMD:', e);
         return null;
@@ -947,6 +1205,11 @@ async function baixarGeoJSON(nomeArquivo) {
         return null;
     }
     
+    const etagAtual = await obterEtagArquivo(fileId);
+    if (etagAtual) {
+        InventarioSync.etags[nomeArquivo] = etagAtual;
+    }
+    
     try {
         const resp = await fetch(PROXY_URL, {
             method: 'POST',
@@ -991,6 +1254,7 @@ async function salvarGeoJSON(nomeArquivo, dados) {
     if (!await verificarToken()) return null;
     
     const fileId = InventarioSync.file_ids[nomeArquivo];
+    const etagConhecida = InventarioSync.etags[nomeArquivo] || null;
     const nomeCompleto = nomeArquivo.endsWith('.geojson') ? nomeArquivo : nomeArquivo + '.geojson';
     const conteudo = JSON.stringify(dados, null, 2);
     const attributes = { name: nomeCompleto, parent: { id: InventarioSync.geojson_folder_id } };
@@ -998,6 +1262,11 @@ async function salvarGeoJSON(nomeArquivo, dados) {
     const url = fileId
         ? `https://upload.box.com/api/2.0/files/${fileId}/content`
         : 'https://upload.box.com/api/2.0/files/content';
+    
+    const headers = { 'Authorization': 'Bearer ' + Sync.access_token };
+    if (fileId && etagConhecida) {
+        headers['If-Match'] = etagConhecida;
+    }
     
     try {
         const base64 = btoa(unescape(encodeURIComponent(conteudo)));
@@ -1008,7 +1277,7 @@ async function salvarGeoJSON(nomeArquivo, dados) {
             body: JSON.stringify({
                 url: url,
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + Sync.access_token },
+                headers: headers,
                 upload: true,
                 attributes: JSON.stringify(attributes),
                 fileBase64: base64,
@@ -1016,15 +1285,23 @@ async function salvarGeoJSON(nomeArquivo, dados) {
             })
         });
         
+        if (resp.status === 412 || resp.status === 409) {
+            console.warn('GeoJSON mudou no Box (conflito etag):', resp.status, nomeArquivo);
+            return { conflito: true };
+        }
+        
         const data = await resp.json();
         if (resp.ok && data.entries) {
             if (!fileId) {
                 InventarioSync.file_ids[nomeArquivo] = data.entries[0].id;
             }
+            if (data.entries[0].etag) {
+                InventarioSync.etags[nomeArquivo] = data.entries[0].etag;
+            }
             console.log('GeoJSON salvo:', nomeArquivo);
             return data.entries[0];
         }
-        console.error('Erro ao salvar GeoJSON:', data);
+        console.error('Erro ao salvar GeoJSON:', resp.status, data);
     } catch (e) {
         console.error('Erro ao salvar GeoJSON:', e);
     }
@@ -1156,161 +1433,192 @@ async function sincronizarInventario(previewAprovado = false) {
             return;
         }
         
-        if (dadosNovos.length === 0 && dadosParaSync.length > 0) {
-            titulo.textContent = 'Re-sincronizando dados...';
-            status.textContent = 'Verificando dados no Box...';
-        }
-        
-        // Agrupar por camada
-        const porCamada = {};
-        dadosParaSync.forEach(dado => {
-            const camada = dado.camada || 'Censo';
-            if (!porCamada[camada]) porCamada[camada] = [];
-            porCamada[camada].push(dado);
-        });
-        
-        // Incluir camadas de dados editados no Box
-        dadosEditadosBox.forEach(editado => {
-            const camada = editado._camada || 'Censo';
-            if (!porCamada[camada]) porCamada[camada] = [];
-        });
-        
-        const camadas = Object.keys(porCamada);
-        let enviados = 0;
-        let novosAdicionados = 0;
-        const geojsonsAtualizados = {};
-        
-        for (const camada of camadas) {
-            titulo.textContent = `Sincronizando ${camada}...`;
-            status.textContent = `Enviando ${porCamada[camada].length} registros...`;
-            const totalItens = dadosParaSync.length || dadosEditadosBox.length;
-            progress.style.width = `${20 + (enviados / totalItens) * 70}%`;
-            
-            // Baixar a versao MAIS RECENTE do Box
-            let geojson = await baixarGeoJSON(camada);
-            if (!geojson) {
-                geojson = {
-                    type: 'FeatureCollection',
-                    name: camada,
-                    features: []
-                };
-            }
-            
-            // Collect existing IDs to avoid duplicates
-            const idsExistentes = new Set();
-            (geojson.features || []).forEach(f => {
-                const id = f.properties && f.properties._id;
-                if (id) idsExistentes.add(id);
-            });
-            
-            const totalAntes = geojson.features ? geojson.features.length : 0;
-            
-            // Adicionar novos pontos e atualizar editados
-            let adicionadosCamada = 0;
-            let atualizadosCamada = 0;
-            porCamada[camada].forEach(dado => {
-                if (idsExistentes.has(dado.id)) {
-                    if (dado.editado) {
-                        const idx = geojson.features.findIndex(f => f.properties && f.properties._id === dado.id);
-                        if (idx !== -1) {
-                            geojson.features[idx].properties = {
-                                ...geojson.features[idx].properties,
-                                ...dado.campos,
-                                _editado: true,
-                                _editado_em: dado.editadoEm
-                            };
-                            atualizadosCamada++;
-                        }
-                    }
-                } else {
-                    const feature = {
-                        type: 'Feature',
-                        geometry: {
-                            type: 'Point',
-                            coordinates: [dado.longitude, dado.latitude, 0]
-                        },
-                        properties: {
-                            ...dado.campos,
-                            _id: dado.id,
-                            _data_coleta: dado.dataColeta,
-                            _tecnico: dado.tecnico
-                        }
-                    };
-                    geojson.features.push(feature);
-                    idsExistentes.add(dado.id);
-                    adicionadosCamada++;
-                }
-            });
-            
-            // Atualizar pontos editados no Box
-            const dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
-            dadosEditados.forEach(editado => {
-                if (editado._camada === camada) {
-                    const idx = geojson.features.findIndex(f => f.properties && f.properties._id === editado._id);
-                    if (idx !== -1) {
-                        geojson.features[idx].properties = {
-                            ...geojson.features[idx].properties,
-                            ...editado.properties
-                        };
-                        atualizadosCamada++;
-                    }
-                }
-            });
-            
-            novosAdicionados += adicionadosCamada;
-            
-            // Salvar GeoJSON no Box
-            await salvarGeoJSON(camada, geojson);
-            
-            // Gerar e salvar KML
-            titulo.textContent = `Gerando KML de ${camada}...`;
-            const conteudoKml = geojsonParaKml(geojson, camada);
-            await salvarKml(camada, conteudoKml);
-            
-            // Guardar geojson atualizado para o Excel
-            geojsonsAtualizados[camada] = geojson.features || [];
-            
-            status.textContent = `${camada}: ${adicionadosCamada} novos, ${atualizadosCamada} atualizados (${geojson.features.length} total)`;
-            enviados += porCamada[camada].length;
-        }
-        
-        // Gerar e enviar Excel para o Box (usando dados ja carregados)
-        titulo.textContent = 'Gerando planilha Excel...';
-        status.textContent = 'Criando Planilha Dados Aplicativo.xlsx...';
-        progress.style.width = '92%';
+        titulo.textContent = 'Travando sincronizacao...';
+        status.textContent = 'Garantindo exclusividade no Box...';
+        progress.style.width = '25%';
         
         try {
-            const resultadoExcel = await enviarExcelParaBox(geojsonsAtualizados);
-            if (resultadoExcel) {
-                status.textContent = 'Planilha Excel gerada com sucesso!';
-            } else {
+            await adquirirTravaSync(InventarioSync.geojson_folder_id, (msg) => {
+                titulo.textContent = 'Aguardando outra sincronizacao...';
+                status.textContent = msg;
+            });
+            
+            if (dadosNovos.length === 0 && dadosParaSync.length > 0) {
+                titulo.textContent = 'Re-sincronizando dados...';
+                status.textContent = 'Verificando dados no Box...';
+            }
+            
+            // Agrupar por camada
+            const porCamada = {};
+            dadosParaSync.forEach(dado => {
+                const camada = dado.camada || 'Censo';
+                if (!porCamada[camada]) porCamada[camada] = [];
+                porCamada[camada].push(dado);
+            });
+            
+            // Incluir camadas de dados editados no Box
+            dadosEditadosBox.forEach(editado => {
+                const camada = editado._camada || 'Censo';
+                if (!porCamada[camada]) porCamada[camada] = [];
+            });
+            
+            const camadas = Object.keys(porCamada);
+            let enviados = 0;
+            let novosAdicionados = 0;
+            const geojsonsAtualizados = {};
+            
+            for (const camada of camadas) {
+                titulo.textContent = `Sincronizando ${camada}...`;
+                status.textContent = `Enviando ${porCamada[camada].length} registros...`;
+                const totalItens = dadosParaSync.length || dadosEditadosBox.length;
+                progress.style.width = `${30 + (enviados / totalItens) * 55}%`;
+                
+                let geojson = null;
+                let salvoCamada = false;
+                
+                for (let tentativa = 1; tentativa <= 3; tentativa++) {
+                    // Baixar a versao MAIS RECENTE do Box
+                    geojson = await baixarGeoJSON(camada);
+                    if (!geojson) {
+                        geojson = {
+                            type: 'FeatureCollection',
+                            name: camada,
+                            features: []
+                        };
+                    }
+                    
+                    // Collect existing IDs to avoid duplicates
+                    const idsExistentes = new Set();
+                    (geojson.features || []).forEach(f => {
+                        const id = f.properties && f.properties._id;
+                        if (id) idsExistentes.add(id);
+                    });
+                    
+                    // Adicionar novos pontos e atualizar editados
+                    let adicionadosCamada = 0;
+                    let atualizadosCamada = 0;
+                    porCamada[camada].forEach(dado => {
+                        if (idsExistentes.has(dado.id)) {
+                            if (dado.editado) {
+                                const idx = geojson.features.findIndex(f => f.properties && f.properties._id === dado.id);
+                                if (idx !== -1) {
+                                    geojson.features[idx].properties = {
+                                        ...geojson.features[idx].properties,
+                                        ...dado.campos,
+                                        _editado: true,
+                                        _editado_em: dado.editadoEm
+                                    };
+                                    atualizadosCamada++;
+                                }
+                            }
+                        } else {
+                            const feature = {
+                                type: 'Feature',
+                                geometry: {
+                                    type: 'Point',
+                                    coordinates: [dado.longitude, dado.latitude, 0]
+                                },
+                                properties: {
+                                    ...dado.campos,
+                                    _id: dado.id,
+                                    _data_coleta: dado.dataColeta,
+                                    _tecnico: dado.tecnico
+                                }
+                            };
+                            geojson.features.push(feature);
+                            idsExistentes.add(dado.id);
+                            adicionadosCamada++;
+                        }
+                    });
+                    
+                    // Atualizar pontos editados no Box
+                    const dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+                    dadosEditados.forEach(editado => {
+                        if (editado._camada === camada) {
+                            const idx = geojson.features.findIndex(f => f.properties && f.properties._id === editado._id);
+                            if (idx !== -1) {
+                                geojson.features[idx].properties = {
+                                    ...geojson.features[idx].properties,
+                                    ...editado.properties
+                                };
+                                atualizadosCamada++;
+                            }
+                        }
+                    });
+                    
+                    status.textContent = tentativa > 1
+                        ? `${camada}: tentativa ${tentativa} de 3...`
+                        : `Enviando ${camada}...`;
+                    
+                    const resultadoSave = await salvarGeoJSON(camada, geojson);
+                    if (resultadoSave && !resultadoSave.conflito) {
+                        salvoCamada = true;
+                        novosAdicionados += adicionadosCamada;
+                        break;
+                    }
+                    
+                    if (tentativa < 3) {
+                        status.textContent = `${camada}: conflito de versao, baixando dados atualizados...`;
+                        await dormir(1500);
+                    }
+                }
+                
+                if (!salvoCamada) {
+                    throw new Error(`Conflito de versao em ${camada} apos 3 tentativas. Tente novamente.`);
+                }
+                
+                // Gerar e salvar KML
+                titulo.textContent = `Gerando KML de ${camada}...`;
+                const conteudoKml = geojsonParaKml(geojson, camada);
+                await salvarKml(camada, conteudoKml);
+                
+                // Guardar geojson atualizado para o Excel
+                geojsonsAtualizados[camada] = geojson.features || [];
+                
+                status.textContent = `${camada}: dados salvos (${geojson.features.length} total)`;
+                enviados += porCamada[camada].length;
+            }
+            
+            // Gerar e enviar Excel para o Box (usando dados ja carregados)
+            titulo.textContent = 'Gerando planilha Excel...';
+            status.textContent = 'Criando Planilha Dados Aplicativo.xlsx...';
+            progress.style.width = '92%';
+            
+            try {
+                const resultadoExcel = await enviarExcelParaBox(geojsonsAtualizados);
+                if (resultadoExcel) {
+                    status.textContent = 'Planilha Excel gerada com sucesso!';
+                } else {
+                    status.textContent = 'Aviso: Erro ao gerar planilha Excel';
+                }
+            } catch (eExcel) {
+                console.error('Erro ao gerar Excel:', eExcel);
                 status.textContent = 'Aviso: Erro ao gerar planilha Excel';
             }
-        } catch (eExcel) {
-            console.error('Erro ao gerar Excel:', eExcel);
-            status.textContent = 'Aviso: Erro ao gerar planilha Excel';
+            
+            // Marcar como sincronizados
+            const agora = new Date();
+            dadosParaSync.forEach(dado => {
+                dado.status = 'sincronizado';
+                dado.syncEm = agora.toISOString();
+                FilaSync.marcarSincronizado(dado.id);
+            });
+            
+            salvarDadosLocais();
+            
+            localStorage.removeItem('agf_inventario_editados');
+            
+            titulo.textContent = 'Sincronizacao concluida!';
+            status.textContent = `${novosAdicionados} novos pontos em ${camadas.length} camada(s) + KML + Excel gerado`;
+            progress.style.width = '100%';
+            btnFechar.style.display = 'block';
+            
+            atualizarContadorPontos();
+            carregarPontosNoMapa();
+            mostrarToast(`${novosAdicionados} novos + editados sincronizados + KML + Excel!`, 'sucesso');
+        } finally {
+            await liberarTravaSync();
         }
-        
-        // Marcar como sincronizados
-        const agora = new Date();
-        dadosParaSync.forEach(dado => {
-            dado.status = 'sincronizado';
-            dado.syncEm = agora.toISOString();
-            FilaSync.marcarSincronizado(dado.id);
-        });
-        
-        salvarDadosLocais();
-        
-        localStorage.removeItem('agf_inventario_editados');
-        
-        titulo.textContent = 'Sincronizacao concluida!';
-        status.textContent = `${novosAdicionados} novos pontos em ${camadas.length} camada(s) + KML + Excel gerado`;
-        progress.style.width = '100%';
-        btnFechar.style.display = 'block';
-        
-        atualizarContadorPontos();
-        carregarPontosNoMapa();
-        mostrarToast(`${novosAdicionados} novos + editados sincronizados + KML + Excel!`, 'sucesso');
         
     } catch (error) {
         console.error('Erro na sincronizacao:', error);
@@ -1733,150 +2041,190 @@ async function sincronizarCmd(previewAprovado = false) {
             return;
         }
         
-        // Baixar GeoJSON existente do Box para mesclar
-        titulo.textContent = 'Baixando dados existentes...';
-        status.textContent = 'Consultando Box...';
-        progress.style.width = '25%';
+        titulo.textContent = 'Travando sincronizacao...';
+        status.textContent = 'Garantindo exclusividade no Box...';
+        progress.style.width = '22%';
         
-        let geojsonExistente = null;
         try {
-            geojsonExistente = await baixarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD');
-        } catch(e) {}
-        
-        let featuresFinais = [];
-        
-        // Comecar com features existentes do Box
-        if (geojsonExistente && geojsonExistente.features) {
-            featuresFinais = geojsonExistente.features.map(f => ({
-                ...f,
-                _camada: 'Questionario_FAUNA_ERRANTE_CMD'
-            }));
-        }
-        
-        // Aplicar edicoes do Box
-        dadosEditadosBox.forEach(editado => {
-            const idx = featuresFinais.findIndex(f => f.properties && f.properties._id === editado._id);
-            if (idx !== -1) {
-                featuresFinais[idx].properties = {
-                    ...featuresFinais[idx].properties,
-                    ...editado.properties,
-                    _editado: true,
-                    _editado_em: new Date().toISOString()
-                };
-            }
-        });
-        
-        // Adicionar novos pontos locais
-        const idsExistentes = new Set(featuresFinais.map(f => f.properties && f.properties._id));
-        dadosNovos.forEach(dado => {
-            if (!idsExistentes.has(dado.id)) {
-                featuresFinais.push({
-                    type: 'Feature',
-                    _camada: 'Questionario_FAUNA_ERRANTE_CMD',
-                    geometry: {
-                        type: 'Point',
-                        coordinates: [dado.longitude, dado.latitude]
-                    },
-                    properties: {
-                        ...dado.campos,
-                        _id: dado.id,
-                        _camada: 'Questionario_FAUNA_ERRANTE_CMD',
-                        _tecnico: dado.tecnico,
-                        _data_coleta: dado.dataColeta
+            await adquirirTravaSync(CmdSync.folder_id, (msg) => {
+                titulo.textContent = 'Aguardando outra sincronizacao...';
+                status.textContent = msg;
+            });
+            
+            let geojsonExistente = null;
+            let featuresFinais = [];
+            let geojsonData = null;
+            let dadosCompletos = [];
+            let geojsonSalvo = false;
+            
+            for (let tentativa = 1; tentativa <= 3; tentativa++) {
+                // Baixar GeoJSON existente do Box para mesclar
+                titulo.textContent = tentativa === 1
+                    ? 'Baixando dados existentes...'
+                    : 'Conflito de versao - baixando dados atualizados...';
+                status.textContent = tentativa > 1
+                    ? `Tentativa ${tentativa} de 3...`
+                    : 'Consultando Box...';
+                progress.style.width = `${25 + tentativa * 5}%`;
+                
+                geojsonExistente = null;
+                try {
+                    geojsonExistente = await baixarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD');
+                } catch(e) {}
+                
+                featuresFinais = [];
+                
+                // Comecar com features existentes do Box
+                if (geojsonExistente && geojsonExistente.features) {
+                    featuresFinais = geojsonExistente.features.map(f => ({
+                        ...f,
+                        _camada: 'Questionario_FAUNA_ERRANTE_CMD'
+                    }));
+                }
+                
+                // Aplicar edicoes do Box
+                dadosEditadosBox.forEach(editado => {
+                    const idx = featuresFinais.findIndex(f => f.properties && f.properties._id === editado._id);
+                    if (idx !== -1) {
+                        featuresFinais[idx].properties = {
+                            ...featuresFinais[idx].properties,
+                            ...editado.properties,
+                            _editado: true,
+                            _editado_em: new Date().toISOString()
+                        };
                     }
                 });
-                idsExistentes.add(dado.id);
-            }
-        });
-        
-        // Converter features para formato dos geradores Excel/KML
-        const dadosCompletos = featuresFinais.map(f => {
-            const props = f.properties || {};
-            const coords = f.geometry ? f.geometry.coordinates : [0, 0];
-            return {
-                campos: props,
-                tecnico: props._tecnico || '',
-                dataColeta: props._data_coleta || '',
-                latitude: coords[1],
-                longitude: coords[0]
-            };
-        });
-        
-        // Gerar Excel com dados completos
-        titulo.textContent = 'Gerando planilha Excel...';
-        status.textContent = `Criando planilha com ${dadosCompletos.length} pontos...`;
-        progress.style.width = '40%';
-        
-        await gerarESalvarExcelCmd(dadosCompletos);
-        
-        // Gerar KML com dados completos
-        titulo.textContent = 'Gerando KML...';
-        status.textContent = `Criando KML com ${dadosCompletos.length} pontos...`;
-        progress.style.width = '55%';
-        
-        await gerarESalvarKmlCmd(dadosCompletos);
-        
-        // Salvar GeoJSON no Box
-        titulo.textContent = 'Salvando GeoJSON...';
-        status.textContent = 'Salvando dados geograficos...';
-        progress.style.width = '70%';
-        
-        const geojsonData = {
-            type: 'FeatureCollection',
-            features: featuresFinais
-        };
-        await salvarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD', geojsonData);
-        
-        // Enviar fotos para o Box
-        const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
-        if (fotosParaEnviar.length > 0) {
-            titulo.textContent = 'Enviando fotos...';
-            status.textContent = `Enviando ${fotosParaEnviar.length} fotos...`;
-            progress.style.width = '75%';
-            
-            for (const dado of fotosParaEnviar) {
-                const nomePonto = dado.campos.PONTO;
-                const extensao = dado.foto.split(';')[0].split('/')[1] || 'jpg';
-                const nomeArquivo = `${nomePonto}.${extensao}`;
                 
-                try {
-                    await enviarFotoParaBox(dado.foto, nomePonto, nomeArquivo);
-                    console.log(`Foto enviada: ${nomeArquivo}`);
-                } catch (erroFoto) {
-                    console.error(`Erro ao enviar foto ${nomeArquivo}:`, erroFoto);
+                // Adicionar novos pontos locais
+                const idsExistentes = new Set(featuresFinais.map(f => f.properties && f.properties._id));
+                dadosNovos.forEach(dado => {
+                    if (!idsExistentes.has(dado.id)) {
+                        featuresFinais.push({
+                            type: 'Feature',
+                            _camada: 'Questionario_FAUNA_ERRANTE_CMD',
+                            geometry: {
+                                type: 'Point',
+                                coordinates: [dado.longitude, dado.latitude]
+                            },
+                            properties: {
+                                ...dado.campos,
+                                _id: dado.id,
+                                _camada: 'Questionario_FAUNA_ERRANTE_CMD',
+                                _tecnico: dado.tecnico,
+                                _data_coleta: dado.dataColeta
+                            }
+                        });
+                        idsExistentes.add(dado.id);
+                    }
+                });
+                
+                // Converter features para formato dos geradores Excel/KML
+                dadosCompletos = featuresFinais.map(f => {
+                    const props = f.properties || {};
+                    const coords = f.geometry ? f.geometry.coordinates : [0, 0];
+                    return {
+                        campos: props,
+                        tecnico: props._tecnico || '',
+                        dataColeta: props._data_coleta || '',
+                        latitude: coords[1],
+                        longitude: coords[0]
+                    };
+                });
+                
+                // Salvar GeoJSON no Box
+                titulo.textContent = 'Salvando GeoJSON...';
+                status.textContent = tentativa > 1
+                    ? `Tentativa ${tentativa} de 3...`
+                    : 'Salvando dados geograficos...';
+                progress.style.width = `${40 + tentativa * 10}%`;
+                
+                geojsonData = {
+                    type: 'FeatureCollection',
+                    features: featuresFinais
+                };
+                const resultadoSave = await salvarGeoJSONCmd('Questionario_FAUNA_ERRANTE_CMD', geojsonData);
+                if (resultadoSave && !resultadoSave.conflito) {
+                    geojsonSalvo = true;
+                    break;
+                }
+                
+                if (tentativa < 3) {
+                    status.textContent = 'Conflito de versao, baixando dados atualizados...';
+                    await dormir(1500);
                 }
             }
-        }
-        
-        titulo.textContent = 'Finalizando...';
-        status.textContent = 'Atualizando status local...';
-        progress.style.width = '90%';
-        
-        const agora = new Date();
-        dadosLocais.forEach(dado => {
-            dado.status = 'sincronizado';
-            dado.syncEm = agora.toISOString();
-            if (typeof FilaSync !== 'undefined') {
-                FilaSync.marcarSincronizado(dado.id);
+            
+            if (!geojsonSalvo) {
+                throw new Error('Conflito de versao no GeoJSON apos 3 tentativas. Tente novamente.');
             }
-        });
-        
-        salvarDadosLocais();
-        
-        // Limpar editados do Box apos sincronizacao
-        localStorage.removeItem('agf_inventario_editados');
-        
-        titulo.textContent = 'Sincronizacao concluida!';
-        status.textContent = `${featuresFinais.length} pontos no total (novos + editados)`;
-        progress.style.width = '100%';
-        btnFechar.style.display = 'block';
-        
-        // Atualizar dadosBox['cmd'] com os dados que foram enviados
-        App.dadosBox['cmd'] = geojsonData.features;
-        
-        atualizarContadorPontos();
-        carregarPontosNoMapa();
-        mostrarToast(`${dadosNovos.length} novos + ${dadosEditadosBox.length} editados sincronizados!`, 'sucesso');
+            
+            // Gerar Excel com dados completos (depois do save bem-sucedido)
+            titulo.textContent = 'Gerando planilha Excel...';
+            status.textContent = `Criando planilha com ${dadosCompletos.length} pontos...`;
+            progress.style.width = '75%';
+            
+            await gerarESalvarExcelCmd(dadosCompletos);
+            
+            // Gerar KML com dados completos
+            titulo.textContent = 'Gerando KML...';
+            status.textContent = `Criando KML com ${dadosCompletos.length} pontos...`;
+            progress.style.width = '82%';
+            
+            await gerarESalvarKmlCmd(dadosCompletos);
+            
+            // Enviar fotos para o Box
+            const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
+            if (fotosParaEnviar.length > 0) {
+                titulo.textContent = 'Enviando fotos...';
+                status.textContent = `Enviando ${fotosParaEnviar.length} fotos...`;
+                progress.style.width = '86%';
+                
+                for (const dado of fotosParaEnviar) {
+                    const nomePonto = dado.campos.PONTO;
+                    const extensao = dado.foto.split(';')[0].split('/')[1] || 'jpg';
+                    const nomeArquivo = `${nomePonto}.${extensao}`;
+                    
+                    try {
+                        await enviarFotoParaBox(dado.foto, nomePonto, nomeArquivo);
+                        console.log(`Foto enviada: ${nomeArquivo}`);
+                    } catch (erroFoto) {
+                        console.error(`Erro ao enviar foto ${nomeArquivo}:`, erroFoto);
+                    }
+                }
+            }
+            
+            titulo.textContent = 'Finalizando...';
+            status.textContent = 'Atualizando status local...';
+            progress.style.width = '90%';
+            
+            const agora = new Date();
+            dadosLocais.forEach(dado => {
+                dado.status = 'sincronizado';
+                dado.syncEm = agora.toISOString();
+                if (typeof FilaSync !== 'undefined') {
+                    FilaSync.marcarSincronizado(dado.id);
+                }
+            });
+            
+            salvarDadosLocais();
+            
+            // Limpar editados do Box apos sincronizacao
+            localStorage.removeItem('agf_inventario_editados');
+            
+            titulo.textContent = 'Sincronizacao concluida!';
+            status.textContent = `${featuresFinais.length} pontos no total (novos + editados)`;
+            progress.style.width = '100%';
+            btnFechar.style.display = 'block';
+            
+            // Atualizar dadosBox['cmd'] com os dados que foram enviados
+            App.dadosBox['cmd'] = geojsonData.features;
+            
+            atualizarContadorPontos();
+            carregarPontosNoMapa();
+            mostrarToast(`${dadosNovos.length} novos + ${dadosEditadosBox.length} editados sincronizados!`, 'sucesso');
+        } finally {
+            await liberarTravaSync();
+        }
         
     } catch (error) {
         console.error('Erro na sincronizacao CMD:', error);
@@ -2150,7 +2498,9 @@ function abrirExclusao(dadosNaoSync) {
     const modal = document.getElementById('modal-exclusao');
     const lista = document.getElementById('exclusao-lista');
     const resumo = document.getElementById('exclusao-resumo');
+    const subtitulo = document.getElementById('exclusao-subtitulo');
     const marcarTodos = document.getElementById('exclusao-marcar-todos');
+    const btnConfirmar = document.getElementById('btn-confirmar-exclusao');
     
     marcarTodos.checked = true;
     
@@ -2163,7 +2513,9 @@ function abrirExclusao(dadosNaoSync) {
     const resumoTexto = Object.entries(porCamada)
         .map(([camada, qtd]) => `${qtd} ${camada}`)
         .join(', ');
-    resumo.textContent = `${dadosNaoSync.length} ponto(s) pendente(s): ${resumoTexto}`;
+    
+    if (subtitulo) subtitulo.textContent = resumoTexto || 'Sem camadas';
+    resumo.textContent = `${dadosNaoSync.length} item(ns) pendente(s)`;
     
     lista.innerHTML = '';
     dadosNaoSync.forEach(dado => {
@@ -2172,23 +2524,39 @@ function abrirExclusao(dadosNaoSync) {
         if (typeof DADOS_CONFIG_INVENTARIO !== 'undefined' && DADOS_CONFIG_INVENTARIO.camadas[dado.camada]) {
             nomeCamada = DADOS_CONFIG_INVENTARIO.camadas[dado.camada].nome;
         }
-        const nome = dado.campos.nome_proprietario || dado.campos.NOME_DO_ENTREVISTADO || 'Sem nome';
-        const endereco = dado.campos.endereco || dado.campos.ENDERECO_COMPLETO || '';
-        const data = new Date(dado.dataColeta).toLocaleDateString('pt-BR');
+        const campos = dado.campos || {};
+        const nome = campos.PONTO || campos.CODIGO || campos.NOME_POPULAR || campos.nome_proprietario || campos.NOME_DO_ENTREVISTADO || dado.id;
+        const endereco = campos.ENDERECO_COMPLETO || campos.endereco || '';
+        const data = dado.dataColeta ? new Date(dado.dataColeta).toLocaleDateString('pt-BR') : '';
+        const detalhes = nomeCamada + (endereco ? ' - ' + endereco : '') + (data ? ' - ' + data : '');
         
         const item = document.createElement('div');
-        item.className = 'revisao-item-checkbox';
+        item.className = 'preview-item preview-item-checkbox';
         item.innerHTML = `
             <input type="checkbox" checked data-id="${dado.id}">
-            <div class="revisao-cor" style="background-color: ${cor}"></div>
-            <div class="revisao-info">
-                <div class="revisao-nome">${nome}</div>
-                <div class="revisao-detalhes">${nomeCamada}${endereco ? ' - ' + endereco : ''} - ${data}</div>
+            <span class="preview-item-cor" style="background-color: ${cor}"></span>
+            <span class="preview-item-tipo preview-item-editado">EXCLUIR</span>
+            <div class="preview-item-info">
+                <div class="preview-item-nome">${nome}</div>
+                <div class="preview-item-detalhes">${detalhes}</div>
             </div>
         `;
         lista.appendChild(item);
     });
     
+    const atualizarContador = () => {
+        const selecionados = document.querySelectorAll('#exclusao-lista input[type="checkbox"]:checked').length;
+        btnConfirmar.textContent = selecionados === 0 ? 'Excluir' : `Excluir ${selecionados}`;
+        btnConfirmar.disabled = selecionados === 0;
+    };
+    
+    lista.addEventListener('change', (e) => {
+        if (e.target.matches('input[type="checkbox"]')) atualizarContador();
+    });
+    
+    marcarTodos.addEventListener('change', atualizarContador);
+    
+    atualizarContador();
     modal.classList.add('ativo');
 }
 
@@ -2225,20 +2593,28 @@ function mostrarPreviewExclusao(pontos, idsParaExcluir) {
     subtitulo.textContent = 'Itens que serão removidos:';
     
     badgeNovos.style.display = 'none';
-    badgeEditados.style.display = 'none';
+    badgeEditados.style.display = 'inline-block';
+    badgeEditados.textContent = pontos.length + ' itens';
     
     let html = '';
     pontos.forEach(dado => {
-        const nome = dado.campos?.PONTO || dado.campos?.CODIGO || dado.campos?.nome_proprietario || dado.id;
+        const campos = dado.campos || {};
+        const nome = campos.PONTO || campos.CODIGO || campos.NOME_POPULAR || campos.nome_proprietario || campos.NOME_DO_ENTREVISTADO || dado.id;
+        const camada = dado.camada || 'Sem camada';
+        const cor = (typeof CamadasConfig !== 'undefined' && CamadasConfig.cores[dado.camada]) || '#3498DB';
         html += `<div class="preview-item">
+            <span class="preview-item-cor" style="background-color: ${cor}"></span>
             <span class="preview-item-tipo preview-item-editado">EXCLUIR</span>
-            <span class="preview-item-nome">${nome}</span>
+            <div class="preview-item-info">
+                <div class="preview-item-nome">${nome}</div>
+                <div class="preview-item-detalhes">${camada}</div>
+            </div>
         </div>`;
     });
     
     lista.innerHTML = html;
     
-    btnConfirmar.textContent = 'Excluir';
+    btnConfirmar.textContent = pontos.length === 0 ? 'Excluir' : `Excluir ${pontos.length}`;
     btnConfirmar.style.background = '#E74C3C';
     
     btnCancelar.onclick = () => {
