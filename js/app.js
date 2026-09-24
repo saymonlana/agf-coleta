@@ -11,6 +11,7 @@ const App = {
     config: null,
     positionWatch: null,
     currentPosition: null,
+    gpsFallbackTimer: null,
     projetos: [],
     marcandoPonto: false,
     pontoMarcado: null
@@ -2275,19 +2276,78 @@ function salvarDadosLocais() {
 function iniciarGPS() {
     console.log('GPS: Aguardando posicionamento do dispositivo...');
     mostrarToast('Procurando sinal GPS...', 'info');
+
+    // Fallback: se em 8s o Android nao enviar posicao, usar geolocalizacao do WebView
+    clearTimeout(App.gpsFallbackTimer);
+    App.gpsFallbackTimer = setTimeout(() => {
+        if (!App.currentPosition) {
+            console.log('GPS: sem posicao nativa, ativando fallback WebView...');
+            iniciarFallbackGeoWebView();
+        }
+    }, 8000);
+}
+
+function iniciarFallbackGeoWebView() {
+    if (!('geolocation' in navigator)) return;
+    if (App.positionWatch) return;
+
+    App.positionWatch = navigator.geolocation.watchPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            console.log('GPS recebido do WebView:', lat, lng, 'precisao:', accuracy + 'm');
+            aplicarPosicaoGPS(lat, lng, accuracy);
+        },
+        (error) => {
+            console.error('GPS WebView erro:', error.code, error.message);
+            if (error.code === 1) {
+                mostrarToast('Permissao de localizacao negada', 'erro');
+            } else if (error.code === 3) {
+                // Timeout: manter watch tentando (watchPosition ja continua)
+                mostrarToast('GPS demorando... saia de area coberta se necessario', 'aviso');
+            }
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 20000,
+            maximumAge: 5000
+        }
+    );
+}
+
+function aplicarPosicaoGPS(lat, lng, accuracy) {
+    App.currentPosition = { lat: lat, lng: lng, accuracy: accuracy };
+    clearTimeout(App.gpsFallbackTimer);
+
+    if (mapa) {
+        adicionarMarcadorPosicao(App.currentPosition);
+    }
+
+    atualizarCamposCoordenadas(lat, lng);
 }
 
 // Callback chamado pelo Android nativo quando GPS obtem posicao
 window.onPositionFromAndroid = function(lat, lng, accuracy) {
-    App.currentPosition = { lat: lat, lng: lng, accuracy: accuracy };
     console.log('GPS recebido do Android:', lat, lng, 'precisao:', accuracy + 'm');
-    
-    if (mapa) {
-        adicionarMarcadorPosicao(App.currentPosition);
+    aplicarPosicaoGPS(lat, lng, accuracy);
+
+    // Nativo funcionou: cancelar fallback WebView se ativo
+    if (App.positionWatch && navigator.geolocation) {
+        navigator.geolocation.clearWatch(App.positionWatch);
+        App.positionWatch = null;
     }
-    
-    // Atualizar campos de coordenadas se estiverem vazios
-    atualizarCamposCoordenadas(lat, lng);
+};
+
+// Callback de status do GPS enviado pelo Android (permissao/provedor)
+window.onGpsStatusFromAndroid = function(status) {
+    console.log('GPS status do Android:', status);
+    if (status === 'permission_denied') {
+        mostrarToast('Permissao de localizacao negada. Ative nos ajustes do app.', 'erro');
+    } else if (status === 'gps_disabled') {
+        mostrarToast('GPS e rede desligados. Ative a localizacao do dispositivo.', 'erro');
+        iniciarFallbackGeoWebView();
+    }
 };
 
 // Atualizar campos de coordenadas automaticamente
