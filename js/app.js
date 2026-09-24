@@ -11,7 +11,6 @@ const App = {
     config: null,
     positionWatch: null,
     currentPosition: null,
-    gpsFallbackTimer: null,
     gpsSeguindo: false,
     projetos: [],
     marcandoPonto: false,
@@ -2276,17 +2275,14 @@ function salvarDadosLocais() {
 // ============================================
 
 function iniciarGPS() {
-    console.log('GPS: Aguardando posicionamento do dispositivo...');
+    console.log('GPS: Iniciando rastreamento (nativo + WebView)...');
     mostrarToast('Procurando sinal GPS...', 'info');
 
-    // Fallback: se em 8s o Android nao enviar posicao, usar geolocalizacao do WebView
-    clearTimeout(App.gpsFallbackTimer);
-    App.gpsFallbackTimer = setTimeout(() => {
-        if (!App.currentPosition) {
-            console.log('GPS: sem posicao nativa, ativando fallback WebView...');
-            iniciarFallbackGeoWebView();
-        }
-    }, 8000);
+    // Fonte 1 (WebView): watchPosition contínuo desde o inicio
+    iniciarFallbackGeoWebView();
+
+    // Fonte 2 (Android nativa): posicoes chegam via onPositionFromAndroid
+    // Ambas rodam em paralelo — se uma parar, a outra mantem o ponto andando
 }
 
 function iniciarFallbackGeoWebView() {
@@ -2320,7 +2316,6 @@ function iniciarFallbackGeoWebView() {
 
 function aplicarPosicaoGPS(lat, lng, accuracy) {
     App.currentPosition = { lat: lat, lng: lng, accuracy: accuracy };
-    clearTimeout(App.gpsFallbackTimer);
 
     if (mapa) {
         adicionarMarcadorPosicao(App.currentPosition);
@@ -2336,13 +2331,8 @@ function aplicarPosicaoGPS(lat, lng, accuracy) {
 // Callback chamado pelo Android nativo quando GPS obtem posicao
 window.onPositionFromAndroid = function(lat, lng, accuracy) {
     console.log('GPS recebido do Android:', lat, lng, 'precisao:', accuracy + 'm');
+    // Nao cancelar o watch do WebView — manter as duas fontes ativas
     aplicarPosicaoGPS(lat, lng, accuracy);
-
-    // Nativo funcionou: cancelar fallback WebView se ativo
-    if (App.positionWatch && navigator.geolocation) {
-        navigator.geolocation.clearWatch(App.positionWatch);
-        App.positionWatch = null;
-    }
 };
 
 // Callback de status do GPS enviado pelo Android (permissao/provedor)
