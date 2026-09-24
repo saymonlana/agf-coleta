@@ -12,6 +12,7 @@ const App = {
     positionWatch: null,
     currentPosition: null,
     gpsFallbackTimer: null,
+    gpsSeguindo: false,
     projetos: [],
     marcandoPonto: false,
     pontoMarcado: null
@@ -509,7 +510,8 @@ function configurarEventListeners() {
     try {
         document.getElementById('btn-minha-localizacao').addEventListener('click', () => {
             if (App.currentPosition) {
-                mapa.setView([App.currentPosition.lat, App.currentPosition.lng], 16);
+                App.gpsSeguindo = true;
+                mapa.setView([App.currentPosition.lat, App.currentPosition.lng], mapa.getZoom() || 16, { animate: false });
                 adicionarMarcadorPosicao(App.currentPosition);
                 mostrarToast('Centralizando na sua localizacao', 'sucesso');
             } else {
@@ -2322,6 +2324,10 @@ function aplicarPosicaoGPS(lat, lng, accuracy) {
 
     if (mapa) {
         adicionarMarcadorPosicao(App.currentPosition);
+        // Modo seguir: mantem a mira sobre o ponto azul ate o usuario arrastar o mapa
+        if (App.gpsSeguindo) {
+            mapa.setView([lat, lng], mapa.getZoom(), { animate: false });
+        }
     }
 
     atualizarCamposCoordenadas(lat, lng);

@@ -122,6 +122,11 @@ function inicializarMapa(lat, lng) {
         }
     });
     
+    // Usuario arrastou o mapa: parar de seguir o GPS
+    mapa.on('dragstart', function() {
+        App.gpsSeguindo = false;
+    });
+    
     // Marcador de posicao atual
     if (App.currentPosition) {
         adicionarMarcadorPosicao(App.currentPosition);
