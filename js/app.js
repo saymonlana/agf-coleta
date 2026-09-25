@@ -1837,6 +1837,9 @@ function salvarEdicao(campos) {
             if (App.fotoAtual) {
                 ponto.foto = App.fotoAtual;
                 App.fotoAtual = null;
+                const pFoto = ponto.campos.PONTO || ponto.campos.CODIGO || '';
+                adicionarFotoPendente(pFoto, ponto.foto);
+                mostrarToast(`Foto anexada ao ponto ${pFoto} (enviara na sincronizacao)`, 'sucesso');
             }
             ponto.editado = true;
             ponto.editadoEm = new Date().toISOString();
@@ -1880,6 +1883,9 @@ function salvarEdicao(campos) {
             if (App.fotoAtual) {
                 registro.foto = App.fotoAtual;
                 App.fotoAtual = null;
+                const pFoto = registro.properties.PONTO || registro.properties.CODIGO || '';
+                adicionarFotoPendente(pFoto, registro.foto);
+                mostrarToast(`Foto anexada ao ponto ${pFoto} (enviara na sincronizacao)`, 'sucesso');
             } else if (anterior && anterior.foto) {
                 registro.foto = anterior.foto;
             }
@@ -2170,6 +2176,10 @@ function handleSalvar() {
     if (App.fotoAtual) {
         dados.foto = App.fotoAtual;
         App.fotoAtual = null;
+        if (dados.campos.PONTO || dados.campos.CODIGO) {
+            adicionarFotoPendente(dados.campos.PONTO || dados.campos.CODIGO, dados.foto);
+            mostrarToast(`Foto anexada ao ponto ${dados.campos.PONTO || dados.campos.CODIGO} (enviara na sincronizacao)`, 'sucesso');
+        }
     }
     
     // Salvar localmente

@@ -2020,13 +2020,19 @@ async function sincronizarCmd(previewAprovado = false) {
     const progress = document.getElementById('sync-progress');
     const btnFechar = document.getElementById('btn-fechar-sync');
     
+    let versaoApp = '?';
+    try {
+        const vr = await fetch('/version.json?t=' + Date.now());
+        if (vr.ok) versaoApp = (await vr.json()).version;
+    } catch (e) {}
+    
     modal.classList.add('ativo');
     btnFechar.style.display = 'none';
     progress.style.backgroundColor = '#27AE60';
     
     try {
         titulo.textContent = 'Conectando ao Box...';
-        status.textContent = 'Verificando token...';
+        status.textContent = `Versao ${versaoApp} - verificando token...`;
         progress.style.width = '10%';
         
         if (!await testarConexaoBox()) {
@@ -2040,10 +2046,11 @@ async function sincronizarCmd(previewAprovado = false) {
         const dadosLocais = App.dadosLocais[App.projetoAtual] || [];
         const dadosNovos = dadosLocais.filter(d => d.status === 'novo');
         const dadosEditadosBox = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+        const filaFotos = lerFilaFotos();
         
-        if (dadosNovos.length === 0 && dadosEditadosBox.length === 0) {
+        if (dadosNovos.length === 0 && dadosEditadosBox.length === 0 && filaFotos.length === 0) {
             titulo.textContent = 'Nada para sincronizar';
-            status.textContent = 'Todos os dados ja foram enviados';
+            status.textContent = `Todos os dados ja foram enviados (v${versaoApp})`;
             progress.style.width = '100%';
             btnFechar.style.display = 'block';
             return;
@@ -2060,18 +2067,26 @@ async function sincronizarCmd(previewAprovado = false) {
             });
             
             // Enviar fotos ANTES do GeoJSON para gravar o _foto_id nas features
-            // Inclui pontos novos locais E pontos do Box com foto adicionada na edicao
+            // Fontes: pontos novos locais, pontos editados do Box e fila de fotos pendentes
             const itensFoto = [];
+            const fotosVistas = new Set();
+            const addFoto = (ponto, foto) => {
+                const chave = chaveFotoCmd(ponto);
+                if (!ponto || !foto || fotosVistas.has(chave)) return;
+                fotosVistas.add(chave);
+                itensFoto.push({ ponto: ponto, foto: foto });
+            };
             dadosLocais.filter(d => d.foto && d.campos && d.campos.PONTO)
-                .forEach(d => itensFoto.push({ ponto: d.campos.PONTO, foto: d.foto }));
+                .forEach(d => addFoto(d.campos.PONTO, d.foto));
             dadosEditadosBox.filter(d => d.foto && d.properties && d.properties.PONTO)
-                .forEach(d => itensFoto.push({ ponto: d.properties.PONTO, foto: d.foto }));
+                .forEach(d => addFoto(d.properties.PONTO, d.foto));
+            lerFilaFotos().forEach(f => addFoto(f.ponto, f.foto));
             let fotoIdsNovas = {};
             let falhasFoto = [];
             
             if (itensFoto.length > 0) {
                 titulo.textContent = 'Enviando fotos...';
-                status.textContent = `Enviando ${itensFoto.length} fotos...`;
+                status.textContent = `Enviando ${itensFoto.length} fotos: ${itensFoto.map(i => i.ponto).join(', ')}...`;
                 progress.style.width = '24%';
                 
                 await listarFotosCmd(true);
@@ -2087,6 +2102,7 @@ async function sincronizarCmd(previewAprovado = false) {
                             ? resultado.entries[0]
                             : (resultado && resultado.id ? resultado : null);
                         if (entrada) fotoIdsNovas[chaveFotoCmd(nomePonto)] = entrada.id;
+                        removerFotoPendente(nomePonto);
                         console.log(`Foto enviada: ${nomeArquivo}`);
                     } catch (erroFoto) {
                         falhasFoto.push(nomeArquivo);
@@ -2250,9 +2266,9 @@ async function sincronizarCmd(previewAprovado = false) {
             localStorage.removeItem('agf_inventario_editados');
             
             titulo.textContent = 'Sincronizacao concluida!';
-            status.textContent = falhasFoto.length > 0
-                ? `${featuresFinais.length} pontos no total | ${falhasFoto.length} foto(s) NAO enviadas: ${falhasFoto.join(', ')}`
-                : `${featuresFinais.length} pontos no total (novos + editados)`;
+            status.textContent = (falhasFoto.length > 0
+                ? `${featuresFinais.length} pontos | ${falhasFoto.length} foto(s) NAO enviadas: ${falhasFoto.join(', ')}`
+                : `${featuresFinais.length} pontos no total (novos + editados)`) + ` (v${versaoApp})`;
             progress.style.width = '100%';
             btnFechar.style.display = 'block';
             
@@ -2303,6 +2319,35 @@ function baseNomeFoto(nome) {
     const n = String(nome || '');
     const p = n.lastIndexOf('.');
     return chaveFotoCmd(p > 0 ? n.slice(0, p) : n);
+}
+
+// Fila de fotos pendentes: gravada no momento do salvamento da coleta/edicao
+function lerFilaFotos() {
+    try {
+        return JSON.parse(localStorage.getItem('agf_fotos_pendentes') || '[]');
+    } catch (e) {
+        return [];
+    }
+}
+
+function adicionarFotoPendente(ponto, foto) {
+    if (!ponto || !foto) return;
+    try {
+        const chave = chaveFotoCmd(ponto);
+        const fila = lerFilaFotos().filter(f => chaveFotoCmd(f.ponto) !== chave);
+        fila.push({ ponto: ponto, foto: foto });
+        localStorage.setItem('agf_fotos_pendentes', JSON.stringify(fila));
+    } catch (e) {
+        console.warn('Falha ao gravar foto pendente:', e);
+    }
+}
+
+function removerFotoPendente(ponto) {
+    try {
+        const chave = chaveFotoCmd(ponto);
+        const fila = lerFilaFotos().filter(f => chaveFotoCmd(f.ponto) !== chave);
+        localStorage.setItem('agf_fotos_pendentes', JSON.stringify(fila));
+    } catch (e) {}
 }
 
 function carregarIndiceFotosCmd() {
