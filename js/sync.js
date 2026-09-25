@@ -991,7 +991,8 @@ const InventarioSync = {
 // ============================================
 
 const CmdSync = {
-    folder_id: '413710880404',
+    folder_id: '420934379932',
+    fotos_folder_id: '421209843897',
     excel_file_id: null,
     kml_file_id: null,
     file_ids: {},
@@ -1006,6 +1007,7 @@ function salvarCacheCmdFileIds(fileIds) {
     try {
         localStorage.setItem('agf_cmd_file_ids', JSON.stringify({
             file_ids: fileIds,
+            folder: CmdSync.folder_id,
             timestamp: Date.now()
         }));
     } catch (e) {}
@@ -1016,6 +1018,10 @@ function carregarCacheCmdFileIds() {
         const raw = localStorage.getItem('agf_cmd_file_ids');
         if (!raw) return null;
         const cache = JSON.parse(raw);
+        if (cache.folder !== CmdSync.folder_id) {
+            localStorage.removeItem('agf_cmd_file_ids');
+            return null;
+        }
         const idadeMin = (Date.now() - cache.timestamp) / (1000 * 60);
         if (idadeMin > 30) return null;
         return cache.file_ids;
@@ -2247,7 +2253,7 @@ function arrayBufferToBase64(buffer) {
 }
 
 async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
-    const FOTOS_FOLDER_ID = '414345486296';
+    const FOTOS_FOLDER_ID = CmdSync.fotos_folder_id;
     
     // Converter base64 para bytes
     const base64Data = fotoBase64.split(',')[1];

@@ -193,6 +193,7 @@ function salvarCacheCmd(dados) {
     try {
         const cache = {
             dados: dados,
+            folder: (typeof CmdSync !== 'undefined') ? CmdSync.folder_id : null,
             timestamp: Date.now()
         };
         localStorage.setItem('agf_cmd_cache', JSON.stringify(cache));
@@ -208,6 +209,12 @@ function carregarCacheCmd() {
         if (!raw) return null;
         
         const cache = JSON.parse(raw);
+        const pastaAtual = (typeof CmdSync !== 'undefined') ? CmdSync.folder_id : null;
+        if (cache.folder !== pastaAtual) {
+            console.log('Cache CMD de outra pasta, ignorando');
+            localStorage.removeItem('agf_cmd_cache');
+            return null;
+        }
         const idadeHoras = (Date.now() - cache.timestamp) / (1000 * 60 * 60);
         console.log('Cache CMD encontrado:', cache.dados.length, 'registros,', idadeHoras.toFixed(1), 'horas atras');
         
