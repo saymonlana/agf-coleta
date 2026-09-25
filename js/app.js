@@ -1834,6 +1834,10 @@ function salvarEdicao(campos) {
         
         if (ponto) {
             Object.assign(ponto.campos, campos);
+            if (App.fotoAtual) {
+                ponto.foto = App.fotoAtual;
+                App.fotoAtual = null;
+            }
             ponto.editado = true;
             ponto.editadoEm = new Date().toISOString();
             if (ponto.status !== 'novo') {
@@ -1863,14 +1867,30 @@ function salvarEdicao(campos) {
             ponto.properties._editado_em = new Date().toISOString();
             
             let dadosEditados = JSON.parse(localStorage.getItem('agf_inventario_editados') || '[]');
+            const anterior = dadosEditados.find(d => d._id === AppEditando.id) || null;
             dadosEditados = dadosEditados.filter(d => d._id !== AppEditando.id);
-            dadosEditados.push({
+            
+            const registro = {
                 _id: AppEditando.id,
                 _camada: AppEditando.camada,
                 properties: ponto.properties,
                 geometry: ponto.geometry
-            });
-            localStorage.setItem('agf_inventario_editados', JSON.stringify(dadosEditados));
+            };
+            // Foto tirada na edicao: guardada para subir na proxima sincronizacao
+            if (App.fotoAtual) {
+                registro.foto = App.fotoAtual;
+                App.fotoAtual = null;
+            } else if (anterior && anterior.foto) {
+                registro.foto = anterior.foto;
+            }
+            dadosEditados.push(registro);
+            
+            try {
+                localStorage.setItem('agf_inventario_editados', JSON.stringify(dadosEditados));
+            } catch (e) {
+                console.warn('Falha ao salvar edicao (espaco local):', e);
+                mostrarToast('Sem espaco local para salvar a foto. Apague dados antigos.', 'erro');
+            }
             
             AppEditando = { id: null, origem: null, camada: null };
             atualizarContadorPontos();
@@ -2245,15 +2265,43 @@ function exibirCoordenadasUTM(lat, lng) {
 
 function handleFoto(e) {
     const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(event) {
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        // Reduz o tamanho antes de guardar/enviar (espaco local + dados moveis)
+        comprimirFoto(event.target.result, function(base64) {
             document.getElementById('preview-foto').innerHTML = 
-                `<img src="${event.target.result}" alt="Foto capturada">`;
-            // Salvar base64 da foto nos dados
-            App.fotoAtual = event.target.result;
+                `<img src="${base64}" alt="Foto capturada">`;
+            App.fotoAtual = base64;
+        });
+    };
+    reader.readAsDataURL(file);
+}
+
+function comprimirFoto(dataUrl, aoPronto) {
+    try {
+        const img = new Image();
+        img.onload = function() {
+            const max = 1600;
+            let w = img.width;
+            let h = img.height;
+            if (w > max || h > max) {
+                const escala = Math.min(max / w, max / h);
+                w = Math.round(w * escala);
+                h = Math.round(h * escala);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const saida = canvas.toDataURL('image/jpeg', 0.8);
+            aoPronto(saida.length < dataUrl.length ? saida : dataUrl);
         };
-        reader.readAsDataURL(file);
+        img.onerror = function() { aoPronto(dataUrl); };
+        img.src = dataUrl;
+    } catch (e) {
+        aoPronto(dataUrl);
     }
 }
 

@@ -2060,25 +2060,32 @@ async function sincronizarCmd(previewAprovado = false) {
             });
             
             // Enviar fotos ANTES do GeoJSON para gravar o _foto_id nas features
-            const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
+            // Inclui pontos novos locais E pontos do Box com foto adicionada na edicao
+            const itensFoto = [];
+            dadosLocais.filter(d => d.foto && d.campos && d.campos.PONTO)
+                .forEach(d => itensFoto.push({ ponto: d.campos.PONTO, foto: d.foto }));
+            dadosEditadosBox.filter(d => d.foto && d.properties && d.properties.PONTO)
+                .forEach(d => itensFoto.push({ ponto: d.properties.PONTO, foto: d.foto }));
             let fotoIdsNovas = {};
             let falhasFoto = [];
             
-            if (fotosParaEnviar.length > 0) {
+            if (itensFoto.length > 0) {
                 titulo.textContent = 'Enviando fotos...';
-                status.textContent = `Enviando ${fotosParaEnviar.length} fotos...`;
+                status.textContent = `Enviando ${itensFoto.length} fotos...`;
                 progress.style.width = '24%';
                 
                 await listarFotosCmd(true);
                 
-                for (const dado of fotosParaEnviar) {
-                    const nomePonto = dado.campos.PONTO;
-                    const extensao = dado.foto.split(';')[0].split('/')[1] || 'jpg';
+                for (const item of itensFoto) {
+                    const nomePonto = item.ponto;
+                    const extensao = item.foto.split(';')[0].split('/')[1] || 'jpg';
                     const nomeArquivo = `${nomePonto}.${extensao}`;
                     
                     try {
-                        const resultado = await enviarFotoParaBox(dado.foto, nomePonto, nomeArquivo);
-                        const entrada = resultado && resultado.entries ? resultado.entries[0] : null;
+                        const resultado = await enviarFotoParaBox(item.foto, nomePonto, nomeArquivo);
+                        const entrada = (resultado && resultado.entries)
+                            ? resultado.entries[0]
+                            : (resultado && resultado.id ? resultado : null);
                         if (entrada) fotoIdsNovas[chaveFotoCmd(nomePonto)] = entrada.id;
                         console.log(`Foto enviada: ${nomeArquivo}`);
                     } catch (erroFoto) {
@@ -2159,8 +2166,14 @@ async function sincronizarCmd(previewAprovado = false) {
                 const indiceFotos = CmdSync.foto_ids || {};
                 featuresFinais.forEach(f => {
                     const p = f.properties || {};
-                    if (p._foto_id || !p.PONTO) return;
-                    const idFoto = fotoIdsNovas[chaveFotoCmd(p.PONTO)] || (indiceFotos[chaveFotoCmd(p.PONTO)] || {}).id;
+                    if (!p.PONTO) return;
+                    const recemEnviada = fotoIdsNovas[chaveFotoCmd(p.PONTO)];
+                    if (recemEnviada) {
+                        p._foto_id = recemEnviada;
+                        return;
+                    }
+                    if (p._foto_id) return;
+                    const idFoto = (indiceFotos[chaveFotoCmd(p.PONTO)] || {}).id;
                     if (idFoto) p._foto_id = idFoto;
                 });
                 
@@ -2460,7 +2473,9 @@ async function enviarFotoParaBoxInterno(fotoBase64, nomePonto, nomeArquivo, exis
     }
     
     const resultado = await resp.json();
-    const entrada = resultado && resultado.entries ? resultado.entries[0] : null;
+    const entrada = (resultado && resultado.entries)
+        ? resultado.entries[0]
+        : (resultado && resultado.id ? resultado : null);
     
     // Atualizar indice local de fotos
     if (entrada) {
