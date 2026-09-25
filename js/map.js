@@ -526,12 +526,17 @@ function criarPopupConteudo(dados, idSequencial) {
     
     const codigoPonto = campos.CODIGO || campos.PONTO || '';
     
+    const fotoHtml = dados.foto
+        ? `<div class="popup-foto"><img src="${dados.foto}" alt="Foto do ponto" onclick="abrirFotoTelaCheia(this.src)"></div>`
+        : '';
+    
     return `
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
                 <h4>${nomeCamada || 'Ponto'}${codigoPonto ? ' - ' + codigoPonto : ''}</h4>
                 <span><span class="revisao-status ${statusClass}">${statusLabel}</span></span>
             </div>
+            ${fotoHtml}
             <div class="popup-corpo">
                 <p><strong>ID:</strong> ${idSequencial || ''}</p>
                 ${camposHtml}
@@ -739,6 +744,13 @@ function adicionarFeatureNoMapa(feature, lat, lng, idSequencial) {
         className: 'popup-ponto'
     });
     
+    if (camada === 'Questionario_FAUNA_ERRANTE_CMD') {
+        marcador.on('popupopen', () => {
+            const el = marcador.getPopup().getElement().querySelector('.popup-foto');
+            if (el) preencherFotoPopupCmd(el, props);
+        });
+    }
+    
     // Rótulo permanente com o código do ponto (somente CMD - Anglo American)
     const codigoPonto = props.CODIGO || props.PONTO || '';
     if (codigoPonto && camada === 'Questionario_FAUNA_ERRANTE_CMD') {
@@ -819,12 +831,18 @@ function criarPopupFeature(feature, camada, idSequencial) {
     
     const codigoPonto = props.CODIGO || props.PONTO || '';
     
+    // Slot da foto - preenchido quando o popup abre
+    const fotoHtml = camada === 'Questionario_FAUNA_ERRANTE_CMD'
+        ? `<div class="popup-foto" data-ponto="${String(codigoPonto).replace(/"/g, '&quot;')}" data-foto-id="${props._foto_id || ''}"></div>`
+        : '';
+    
     return `
         <div class="popup-conteudo">
             <div class="popup-cabecalho" style="background-color: ${cor}">
                 <h4>${nomeCamada || 'Ponto'}${codigoPonto ? ' - ' + codigoPonto : ''}</h4>
                 <span><span class="revisao-status sincronizado">Sincronizado</span></span>
             </div>
+            ${fotoHtml}
             <div class="popup-corpo">
                 <p><strong>ID:</strong> ${idSequencial || ''}</p>
                 ${camposHtml}
@@ -834,6 +852,45 @@ function criarPopupFeature(feature, camada, idSequencial) {
             </div>
         </div>
     `;
+}
+
+// ============================================
+// FOTO NO POPUP (CMD)
+// ============================================
+
+async function preencherFotoPopupCmd(el, props) {
+    if (!el) return;
+    
+    const ponto = props.PONTO || '';
+    const fotoId = props._foto_id || '';
+    let temFoto = !!fotoId;
+    
+    if (!temFoto && typeof CmdSync !== 'undefined' && CmdSync.foto_ids) {
+        temFoto = !!(CmdSync.foto_ids[chaveFotoCmd(ponto)]);
+    }
+    
+    // Selo aparece mesmo sem internet quando ja sabemos que existe foto
+    if (temFoto) {
+        el.innerHTML = '<div class="popup-foto-badge">Foto anexada</div>';
+    }
+    
+    if (typeof obterFotoUrlCmd !== 'function') return;
+    const url = await obterFotoUrlCmd(ponto, fotoId || undefined);
+    if (!url || !el.isConnected) return;
+    
+    el.innerHTML = `<img src="${url}" alt="Foto do ponto" onclick="abrirFotoTelaCheia(this.src)">`;
+}
+
+function abrirFotoTelaCheia(src) {
+    const overlay = document.getElementById('lightbox-foto');
+    if (!overlay) return;
+    overlay.querySelector('img').src = src;
+    overlay.classList.add('ativo');
+}
+
+function fecharFotoTelaCheia() {
+    const overlay = document.getElementById('lightbox-foto');
+    if (overlay) overlay.classList.remove('ativo');
 }
 
 // ============================================

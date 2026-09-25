@@ -1102,6 +1102,10 @@ function abrirFormularioColeta() {
     
     const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
     
+    // Novo ponto: sai do modo de edicao e limpa foto pendente
+    AppEditando = { id: null, origem: null, camada: null };
+    App.fotoAtual = null;
+    
     document.getElementById('form-coleta').reset();
     document.getElementById('preview-foto').innerHTML = '';
     
@@ -1200,6 +1204,9 @@ function gerarCamposFormulario() {
     // Verificar se é o projeto CMD (Fauna Errante)
     const isCmd = App.projetoClienteAtual && App.projetoClienteAtual.id === 'anglo_projeto2';
     
+    // Preenchimento automatico vale apenas na coleta de um ponto novo
+    const editando = !!(AppEditando && AppEditando.id);
+    
     // Buscar campos do config.json (PAEBM)
     if (App.config && App.config.camadas_coleta) {
         const nomeCamada = isCmd ? 'Questionario_FAUNA_ERRANTE_CMD' : 'Questionario_PAEBM_SAG';
@@ -1255,15 +1262,15 @@ function gerarCamposFormulario() {
         } else if (campo.tipo === 'data') {
             input = document.createElement('input');
             input.type = 'date';
-            // Preencher data automaticamente
-            if (campo.nome === 'DATA_REGISTRO') {
+            // Preencher data automaticamente (somente em coleta nova)
+            if (campo.nome === 'DATA_REGISTRO' && !editando) {
                 input.value = new Date().toISOString().split('T')[0];
             }
         } else if (campo.tipo === 'hora') {
             input = document.createElement('input');
             input.type = 'time';
-            // Preencher hora automaticamente
-            if (campo.nome === 'HORA_REGISTRO') {
+            // Preencher hora automaticamente (somente em coleta nova)
+            if (campo.nome === 'HORA_REGISTRO' && !editando) {
                 const agora = new Date();
                 input.value = agora.getHours().toString().padStart(2, '0') + ':' + agora.getMinutes().toString().padStart(2, '0');
             }
@@ -1272,9 +1279,9 @@ function gerarCamposFormulario() {
             input.type = 'text';
             input.placeholder = `Digite ${campo.label.toLowerCase()}...`;
             
-            // Preencher coordenadas automaticamente
+            // Preencher coordenadas automaticamente (somente em coleta nova)
             const posicao = App.currentPosition || App.crosshairPosition;
-            if (posicao) {
+            if (posicao && !editando) {
                 if (campo.nome === 'E_UTC') {
                     const utm = wgs84ParaUtm(posicao.lng, posicao.lat);
                     input.value = utm.x;
@@ -1299,8 +1306,8 @@ function gerarCamposFormulario() {
         input.name = campo.nome;
         input.required = campo.obrigatorio;
         
-        // Preencher tecnico automaticamente e bloquear
-        if (campo.nome === 'TECNICO' && App.usuario) {
+        // Preencher tecnico automaticamente e bloquear (somente em coleta nova)
+        if (campo.nome === 'TECNICO' && App.usuario && !editando) {
             input.value = App.usuario.email;
             input.readOnly = true;
             input.style.backgroundColor = '#f0f0f0';
@@ -1312,8 +1319,8 @@ function gerarCamposFormulario() {
         container.appendChild(div);
     });
     
-    // Para CMD: preencher municipio via reverse geocoding
-    if (isCmd) {
+    // Para CMD: preencher municipio via reverse geocoding (somente em coleta nova)
+    if (isCmd && !editando) {
         const posicao = App.crosshairPosition || App.currentPosition;
         if (posicao) {
             buscarEnderecoPorCoordenadas(posicao.lat, posicao.lng).then(resultado => {
@@ -1695,6 +1702,7 @@ function editarPontoLocal(id) {
     }
     
     AppEditando = { id: id, origem: 'local', camada: ponto.camada, projetoAnterior: App.projetoAtual, projetoClienteAnterior: App.projetoClienteAtual };
+    App.fotoAtual = null;
     
     App.projetoAtual = projetoEncontrado;
     
@@ -1712,6 +1720,10 @@ function editarPontoLocal(id) {
     
     gerarCamposFormulario();
     mostrarTela('tela-coleta');
+    
+    // Mostrar foto que ja existe para o ponto
+    document.getElementById('preview-foto').innerHTML = '';
+    exibirFotoExistente(ponto.foto, ponto.campos);
     
     const h1 = document.querySelector('#tela-coleta h1');
     if (h1) {
@@ -1765,9 +1777,14 @@ function editarPontoBox(id, camada) {
     }
     
     AppEditando = { id: id, origem: 'box', camada: origemCamada };
+    App.fotoAtual = null;
     
     gerarCamposFormulario();
     mostrarTela('tela-coleta');
+    
+    // Mostrar foto que ja existe para o ponto
+    document.getElementById('preview-foto').innerHTML = '';
+    exibirFotoExistente(null, ponto.properties);
     
     const h1 = document.querySelector('#tela-coleta h1');
     let nomeCamada = '';
@@ -2237,6 +2254,42 @@ function handleFoto(e) {
             App.fotoAtual = event.target.result;
         };
         reader.readAsDataURL(file);
+    }
+}
+
+function mostrarPreviewFoto(src, rotulo) {
+    const alvo = document.getElementById('preview-foto');
+    if (!alvo) return;
+    if (!src) {
+        alvo.innerHTML = '';
+        return;
+    }
+    alvo.innerHTML = `
+        <img src="${src}" alt="Foto anexada" onclick="abrirFotoTelaCheia(this.src)">
+        ${rotulo ? `<div class="foto-status">${rotulo}</div>` : ''}`;
+}
+
+// Exibe no formulario a foto que ja existe para o ponto (local ou no Box)
+async function exibirFotoExistente(fotoLocal, props) {
+    const alvo = document.getElementById('preview-foto');
+    if (!alvo) return;
+    
+    if (App.fotoAtual) return;
+    
+    if (fotoLocal) {
+        mostrarPreviewFoto(fotoLocal, 'Foto ja anexada a este ponto');
+        return;
+    }
+    
+    if (!props || typeof obterFotoUrlCmd !== 'function') return;
+    if (!props.PONTO && !props._foto_id) return;
+    
+    const url = await obterFotoUrlCmd(props.PONTO || '', props._foto_id || '');
+    if (url && !App.fotoAtual) {
+        mostrarPreviewFoto(url, 'Foto ja anexada a este ponto');
+    } else if (props._foto_id && !App.fotoAtual) {
+        // Sem internet: mostra pelo menos a confirmacao de que existe foto
+        alvo.innerHTML = '<div class="foto-status">Foto ja anexada a este ponto (offline)</div>';
     }
 }
 

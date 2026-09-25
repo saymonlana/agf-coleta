@@ -996,7 +996,9 @@ const CmdSync = {
     excel_file_id: null,
     kml_file_id: null,
     file_ids: {},
-    etags: {}
+    etags: {},
+    foto_ids: null,
+    foto_urls: {}
 };
 
 const CMD_EXCEL_API_URL = (location.protocol === 'file:' || location.hostname === '')
@@ -2057,6 +2059,33 @@ async function sincronizarCmd(previewAprovado = false) {
                 status.textContent = msg;
             });
             
+            // Enviar fotos ANTES do GeoJSON para gravar o _foto_id nas features
+            const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
+            let fotoIdsNovas = {};
+            
+            if (fotosParaEnviar.length > 0) {
+                titulo.textContent = 'Enviando fotos...';
+                status.textContent = `Enviando ${fotosParaEnviar.length} fotos...`;
+                progress.style.width = '24%';
+                
+                await listarFotosCmd(true);
+                
+                for (const dado of fotosParaEnviar) {
+                    const nomePonto = dado.campos.PONTO;
+                    const extensao = dado.foto.split(';')[0].split('/')[1] || 'jpg';
+                    const nomeArquivo = `${nomePonto}.${extensao}`;
+                    
+                    try {
+                        const resultado = await enviarFotoParaBox(dado.foto, nomePonto, nomeArquivo);
+                        const entrada = resultado && resultado.entries ? resultado.entries[0] : null;
+                        if (entrada) fotoIdsNovas[chaveFotoCmd(nomePonto)] = entrada.id;
+                        console.log(`Foto enviada: ${nomeArquivo}`);
+                    } catch (erroFoto) {
+                        console.error(`Erro ao enviar foto ${nomeArquivo}:`, erroFoto);
+                    }
+                }
+            }
+            
             let geojsonExistente = null;
             let featuresFinais = [];
             let geojsonData = null;
@@ -2124,6 +2153,15 @@ async function sincronizarCmd(previewAprovado = false) {
                     }
                 });
                 
+                // Vincular foto a cada ponto (indice de fotos da pasta)
+                const indiceFotos = CmdSync.foto_ids || {};
+                featuresFinais.forEach(f => {
+                    const p = f.properties || {};
+                    if (p._foto_id || !p.PONTO) return;
+                    const idFoto = fotoIdsNovas[chaveFotoCmd(p.PONTO)] || (indiceFotos[chaveFotoCmd(p.PONTO)] || {}).id;
+                    if (idFoto) p._foto_id = idFoto;
+                });
+                
                 // Converter features para formato dos geradores Excel/KML
                 dadosCompletos = featuresFinais.map(f => {
                     const props = f.properties || {};
@@ -2178,27 +2216,6 @@ async function sincronizarCmd(previewAprovado = false) {
             
             await gerarESalvarKmlCmd(dadosCompletos);
             
-            // Enviar fotos para o Box
-            const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
-            if (fotosParaEnviar.length > 0) {
-                titulo.textContent = 'Enviando fotos...';
-                status.textContent = `Enviando ${fotosParaEnviar.length} fotos...`;
-                progress.style.width = '86%';
-                
-                for (const dado of fotosParaEnviar) {
-                    const nomePonto = dado.campos.PONTO;
-                    const extensao = dado.foto.split(';')[0].split('/')[1] || 'jpg';
-                    const nomeArquivo = `${nomePonto}.${extensao}`;
-                    
-                    try {
-                        await enviarFotoParaBox(dado.foto, nomePonto, nomeArquivo);
-                        console.log(`Foto enviada: ${nomeArquivo}`);
-                    } catch (erroFoto) {
-                        console.error(`Erro ao enviar foto ${nomeArquivo}:`, erroFoto);
-                    }
-                }
-            }
-            
             titulo.textContent = 'Finalizando...';
             status.textContent = 'Atualizando status local...';
             progress.style.width = '90%';
@@ -2252,9 +2269,116 @@ function arrayBufferToBase64(buffer) {
     return btoa(binary);
 }
 
+// ============================================
+// FOTOS DO CMD - INDICE, UPLOAD E DOWNLOAD
+// ============================================
+
+function chaveFotoCmd(ponto) {
+    return String(ponto || '').trim().toLowerCase();
+}
+
+function baseNomeFoto(nome) {
+    const n = String(nome || '');
+    const p = n.lastIndexOf('.');
+    return chaveFotoCmd(p > 0 ? n.slice(0, p) : n);
+}
+
+function carregarIndiceFotosCmd() {
+    try {
+        const raw = localStorage.getItem('agf_cmd_foto_ids');
+        if (!raw) return null;
+        const cache = JSON.parse(raw);
+        if (cache.folder !== CmdSync.fotos_folder_id) {
+            localStorage.removeItem('agf_cmd_foto_ids');
+            return null;
+        }
+        if ((Date.now() - cache.timestamp) / (1000 * 60) > 30) return null;
+        CmdSync.foto_ids = cache.fotos;
+        return cache.fotos;
+    } catch (e) {
+        return null;
+    }
+}
+
+function salvarIndiceFotosCmd(fotos) {
+    CmdSync.foto_ids = fotos;
+    try {
+        localStorage.setItem('agf_cmd_foto_ids', JSON.stringify({
+            folder: CmdSync.fotos_folder_id,
+            fotos: fotos,
+            timestamp: Date.now()
+        }));
+    } catch (e) {}
+}
+
+async function listarFotosCmd(forcar) {
+    if (!forcar) {
+        if (CmdSync.foto_ids) return CmdSync.foto_ids;
+        if (carregarIndiceFotosCmd()) return CmdSync.foto_ids;
+    }
+    if (!await verificarToken()) return CmdSync.foto_ids || {};
+    try {
+        const data = await boxFetch(
+            `https://api.box.com/2.0/folders/${CmdSync.fotos_folder_id}/items?limit=1000&fields=name,id,size`,
+            { headers: { 'Authorization': 'Bearer ' + Sync.access_token } }
+        );
+        const fotos = {};
+        (data.entries || []).forEach(item => {
+            if (item.type !== 'file') return;
+            fotos[baseNomeFoto(item.name)] = { id: item.id, name: item.name };
+        });
+        salvarIndiceFotosCmd(fotos);
+    } catch (e) {
+        console.error('Erro ao listar fotos CMD:', e);
+    }
+    return CmdSync.foto_ids || {};
+}
+
+async function obterFotoIdCmd(ponto, fotoId) {
+    if (fotoId) return fotoId;
+    const indice = await listarFotosCmd();
+    const item = indice[chaveFotoCmd(ponto)];
+    return item ? item.id : null;
+}
+
+async function obterFotoUrlCmd(ponto, fotoId) {
+    try {
+        const id = await obterFotoIdCmd(ponto, fotoId);
+        if (!id) return null;
+        if (CmdSync.foto_urls[id]) return CmdSync.foto_urls[id];
+        if (!await verificarToken()) return null;
+
+        const resp = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                url: `https://api.box.com/2.0/files/${id}/content`,
+                method: 'GET',
+                headers: { 'Authorization': 'Bearer ' + Sync.access_token }
+            })
+        });
+        if (!resp.ok) return null;
+
+        const bytes = await resp.arrayBuffer();
+        const url = URL.createObjectURL(new Blob([bytes], { type: 'image/jpeg' }));
+        CmdSync.foto_urls[id] = url;
+        return url;
+    } catch (e) {
+        console.warn('Erro ao baixar foto CMD:', e);
+        return null;
+    }
+}
+
 async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
     const FOTOS_FOLDER_ID = CmdSync.fotos_folder_id;
-    
+
+    // Garante indice de fotos carregado (evita duplicar arquivo)
+    if (!CmdSync.foto_ids) await listarFotosCmd();
+
+    // Se ja existe arquivo com esse nome, envia como nova versao (evita duplicar)
+    const existente = CmdSync.foto_ids ? (CmdSync.foto_ids[baseNomeFoto(nomeArquivo)] || null) : null;
+    const nomeFinal = existente ? existente.name : nomeArquivo;
+
     // Converter base64 para bytes
     const base64Data = fotoBase64.split(',')[1];
     const bytes = atob(base64Data);
@@ -2265,17 +2389,19 @@ async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
     
     // Montar multipart/form-data
     const boundary = '----FormBoundary' + Math.random().toString(36).substring(2);
-    const attributes = JSON.stringify({
-        name: nomeArquivo,
-        parent: { id: FOTOS_FOLDER_ID }
-    });
+    const attributes = JSON.stringify(existente
+        ? { name: nomeFinal, id: existente.id }
+        : { name: nomeFinal, parent: { id: FOTOS_FOLDER_ID } });
+    const urlUpload = existente
+        ? `https://upload.box.com/api/2.0/files/${existente.id}/content`
+        : 'https://upload.box.com/api/2.0/files/content';
     
     let body = '';
     body += `--${boundary}\r\n`;
     body += `Content-Disposition: form-data; name="attributes"\r\n\r\n`;
     body += `${attributes}\r\n`;
     body += `--${boundary}\r\n`;
-    body += `Content-Disposition: form-data; name="file"; filename="${nomeArquivo}"\r\n`;
+    body += `Content-Disposition: form-data; name="file"; filename="${nomeFinal}"\r\n`;
     body += `Content-Type: image/jpeg\r\n\r\n`;
     
     const bodyStart = new TextEncoder().encode(body);
@@ -2291,13 +2417,13 @@ async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            url: 'https://upload.box.com/api/2.0/files/content',
+            url: urlUpload,
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + Sync.access_token },
             upload: true,
             attributes: attributes,
             fileBase64: base64Data,
-            fileName: nomeArquivo
+            fileName: nomeFinal
         })
     });
     
@@ -2306,7 +2432,17 @@ async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
         throw new Error(`Erro ao enviar foto: ${erro}`);
     }
     
-    return await resp.json();
+    const resultado = await resp.json();
+    const entrada = resultado && resultado.entries ? resultado.entries[0] : null;
+    
+    // Atualizar indice local de fotos
+    if (entrada) {
+        const fotos = Object.assign({}, CmdSync.foto_ids || {});
+        fotos[baseNomeFoto(nomeFinal)] = { id: entrada.id, name: entrada.name };
+        salvarIndiceFotosCmd(fotos);
+    }
+    
+    return resultado;
 }
 
 async function gerarESalvarExcelCmd(dadosNovos) {
