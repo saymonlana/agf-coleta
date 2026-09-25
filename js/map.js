@@ -435,8 +435,8 @@ function adicionarPontoNoMapa(dados, idSequencial) {
     const icon = L.divIcon({
         className: 'marcador-ponto',
         html: `<div class="marcador-ponto-inner" style="background-color: ${cor}"></div>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
     });
     
     // Criar marcador
@@ -461,11 +461,27 @@ function adicionarPontoNoMapa(dados, idSequencial) {
             className: 'label-ponto',
             opacity: 1
         });
+        abrirPopupAoClicarNaLabel(marcador);
     }
     
     // Guardar referência
     dados._marcador = marcador;
     marcadores.push(marcador);
+}
+
+// Clique na label do ponto abre o popup
+function abrirPopupAoClicarNaLabel(marcador) {
+    const ligar = () => {
+        const tooltip = marcador.getTooltip ? marcador.getTooltip() : null;
+        const el = tooltip && tooltip.getElement();
+        if (!el || el.dataset.cliquePopup) return;
+        el.dataset.cliquePopup = '1';
+        el.style.cursor = 'pointer';
+        el.addEventListener('click', () => marcador.openPopup());
+    };
+    
+    ligar();
+    marcador.on('tooltipopen', ligar);
 }
 
 function criarPopupConteudo(dados, idSequencial) {
@@ -728,8 +744,8 @@ function adicionarFeatureNoMapa(feature, lat, lng, idSequencial) {
     const icon = L.divIcon({
         className: 'marcador-ponto',
         html: `<div class="marcador-ponto-inner" style="background-color: ${cor}"></div>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6]
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
     });
     
     // Criar marcador
@@ -761,6 +777,7 @@ function adicionarFeatureNoMapa(feature, lat, lng, idSequencial) {
             className: 'label-ponto',
             opacity: 1
         });
+        abrirPopupAoClicarNaLabel(marcador);
     }
     
     marcadores.push(marcador);
@@ -946,6 +963,9 @@ const estiloMarcadores = document.createElement('style');
 estiloMarcadores.textContent = `
     .marcador-ponto {
         background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .marcador-ponto-inner {
@@ -967,6 +987,7 @@ estiloMarcadores.textContent = `
         color: #333;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         white-space: nowrap;
+        cursor: pointer;
     }
     
     .label-ponto::before {

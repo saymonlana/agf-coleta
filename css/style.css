@@ -280,6 +280,7 @@ html, body {
 
 .header-info {
     flex: 1;
+    min-width: 0;
     text-align: center;
 }
 
@@ -294,14 +295,22 @@ html, body {
 .header-info h1 {
     font-size: 18px;
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .header-info span {
     font-size: 12px;
     opacity: 0.8;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .btn-icon {
+    flex-shrink: 0;
     width: 40px;
     height: 40px;
     border: none;
