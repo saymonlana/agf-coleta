@@ -148,12 +148,7 @@ function carregarCamadasInventario() {
     // Propriedades NES
     if (typeof DADOS_Propriedades_NES !== 'undefined' && DADOS_Propriedades_NES.features) {
         const layerPropriedades = L.geoJSON(DADOS_Propriedades_NES, {
-            style: { color: '#3498DB', weight: 2, fillColor: '#3498DB', fillOpacity: 0.15 },
-            onEachFeature: function(feature, layer) {
-                const props = feature.properties || {};
-                const nome = props.Name || 'Propriedade';
-                layer.bindPopup(`<b>${nome}</b><br>Area: ${props.Shape_Area ? Number(props.Shape_Area).toFixed(2) : '-'}`);
-            }
+            style: { color: '#3498DB', weight: 2, fillColor: '#3498DB', fillOpacity: 0.15 }
         });
         camadasOverlay['Propriedades NES'] = layerPropriedades;
         layerPropriedades.addTo(mapa);
@@ -163,12 +158,7 @@ function carregarCamadasInventario() {
     // Quadrantes
     if (typeof DADOS_Quadrantes !== 'undefined' && DADOS_Quadrantes.features) {
         const layerQuadrantes = L.geoJSON(DADOS_Quadrantes, {
-            style: { color: '#F39C12', weight: 1.5, fillColor: '#F39C12', fillOpacity: 0.1 },
-            onEachFeature: function(feature, layer) {
-                const props = feature.properties || {};
-                const nome = props.Name || 'Quadrante';
-                layer.bindPopup(`<b>${nome}</b>`);
-            }
+            style: { color: '#F39C12', weight: 1.5, fillColor: '#F39C12', fillOpacity: 0.1 }
         });
         camadasOverlay['Quadrantes'] = layerQuadrantes;
         layerQuadrantes.addTo(mapa);
@@ -266,17 +256,6 @@ function carregarCamadasCmd() {
             })
         });
 
-        const bindPopupManchas = function(feature, layer) {
-            const p = feature.properties || {};
-            if (p.nome || p.Descricao || p.Area_ha) {
-                const linhas = [];
-                if (p.nome) linhas.push(`<b>${p.nome}</b>`);
-                if (p.Descricao && p.Descricao !== p.nome) linhas.push(p.Descricao);
-                if (p.Area_ha) linhas.push(`Área: ${p.Area_ha} ha`);
-                layer.bindPopup(linhas.join('<br>'));
-            }
-        };
-
         // Diques - vermelho (realçado)
         const layerManchas = L.geoJSON(filtrar(naoZona), {
             style: { color: '#B03A2E', weight: 3, fillColor: '#E74C3C', fillOpacity: 0.45 },
@@ -288,24 +267,21 @@ function carregarCamadasCmd() {
                     fillOpacity: 0.9,
                     weight: 2
                 });
-            },
-            onEachFeature: bindPopupManchas
+            }
         });
         camadasOverlay['Diques'] = layerManchas;
         layerManchas.addTo(mapa);
 
         // ZAS - marrom (realçado)
         const layerZas = L.geoJSON(filtrar(ehZas), {
-            style: { color: '#6B3F1D', weight: 3, fillColor: '#8B5A2B', fillOpacity: 0.45 },
-            onEachFeature: bindPopupManchas
+            style: { color: '#6B3F1D', weight: 3, fillColor: '#8B5A2B', fillOpacity: 0.45 }
         });
         camadasOverlay['ZAS'] = layerZas;
         layerZas.addTo(mapa);
 
         // ZSS - laranja (realçado)
         const layerZss = L.geoJSON(filtrar(ehZss), {
-            style: { color: '#C05A00', weight: 3, fillColor: '#E67E22', fillOpacity: 0.45 },
-            onEachFeature: bindPopupManchas
+            style: { color: '#C05A00', weight: 3, fillColor: '#E67E22', fillOpacity: 0.45 }
         });
         camadasOverlay['ZSS'] = layerZss;
         layerZss.addTo(mapa);
@@ -314,11 +290,7 @@ function carregarCamadasCmd() {
     // Acessos Secundários (rotas/vias) - cinza
     if (typeof DADOS_ACESSOS_SECUNDARIOS !== 'undefined' && DADOS_ACESSOS_SECUNDARIOS.features) {
         const layerAcessos = L.geoJSON(DADOS_ACESSOS_SECUNDARIOS, {
-            style: { color: '#D9D9D9', weight: 2, opacity: 0.9 },
-            onEachFeature: function(feature, layer) {
-                const p = feature.properties || {};
-                if (p.nome) layer.bindPopup(`<b>${p.nome}</b>`);
-            }
+            style: { color: '#D9D9D9', weight: 2, opacity: 0.9 }
         });
         camadasOverlay['Acessos Secundários'] = layerAcessos;
         layerAcessos.addTo(mapa);
@@ -456,6 +428,7 @@ function adicionarPontoNoMapa(dados, idSequencial) {
     if (codigoPonto && dados.camada === 'Questionario_FAUNA_ERRANTE_CMD') {
         marcador.bindTooltip(codigoPonto, {
             permanent: true,
+            interactive: true,
             direction: 'top',
             offset: [0, -10],
             className: 'label-ponto',
@@ -772,6 +745,7 @@ function adicionarFeatureNoMapa(feature, lat, lng, idSequencial) {
     if (codigoPonto && camada === 'Questionario_FAUNA_ERRANTE_CMD') {
         marcador.bindTooltip(codigoPonto, {
             permanent: true,
+            interactive: true,
             direction: 'top',
             offset: [0, -10],
             className: 'label-ponto',
