@@ -2062,6 +2062,7 @@ async function sincronizarCmd(previewAprovado = false) {
             // Enviar fotos ANTES do GeoJSON para gravar o _foto_id nas features
             const fotosParaEnviar = dadosLocais.filter(d => d.foto && d.campos.PONTO);
             let fotoIdsNovas = {};
+            let falhasFoto = [];
             
             if (fotosParaEnviar.length > 0) {
                 titulo.textContent = 'Enviando fotos...';
@@ -2081,6 +2082,7 @@ async function sincronizarCmd(previewAprovado = false) {
                         if (entrada) fotoIdsNovas[chaveFotoCmd(nomePonto)] = entrada.id;
                         console.log(`Foto enviada: ${nomeArquivo}`);
                     } catch (erroFoto) {
+                        falhasFoto.push(nomeArquivo);
                         console.error(`Erro ao enviar foto ${nomeArquivo}:`, erroFoto);
                     }
                 }
@@ -2235,7 +2237,9 @@ async function sincronizarCmd(previewAprovado = false) {
             localStorage.removeItem('agf_inventario_editados');
             
             titulo.textContent = 'Sincronizacao concluida!';
-            status.textContent = `${featuresFinais.length} pontos no total (novos + editados)`;
+            status.textContent = falhasFoto.length > 0
+                ? `${featuresFinais.length} pontos no total | ${falhasFoto.length} foto(s) NAO enviadas: ${falhasFoto.join(', ')}`
+                : `${featuresFinais.length} pontos no total (novos + editados)`;
             progress.style.width = '100%';
             btnFechar.style.display = 'block';
             
@@ -2244,7 +2248,12 @@ async function sincronizarCmd(previewAprovado = false) {
             
             atualizarContadorPontos();
             carregarPontosNoMapa();
-            mostrarToast(`${dadosNovos.length} novos + ${dadosEditadosBox.length} editados sincronizados!`, 'sucesso');
+            mostrarToast(
+                falhasFoto.length > 0
+                    ? `${falhasFoto.length} foto(s) NAO enviadas - veja a mensagem da sincronizacao`
+                    : `${dadosNovos.length} novos + ${dadosEditadosBox.length} editados sincronizados!`,
+                falhasFoto.length > 0 ? 'erro' : 'sucesso'
+            );
         } finally {
             await liberarTravaSync();
         }
@@ -2370,13 +2379,31 @@ async function obterFotoUrlCmd(ponto, fotoId) {
 }
 
 async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
+    try {
+        return await enviarFotoParaBoxInterno(fotoBase64, nomePonto, nomeArquivo);
+    } catch (erro) {
+        const texto = String((erro && erro.message) || erro);
+        const conflito = /item_name_in_use|ja existe|already exists|HTTP 409/i.test(texto);
+        if (!conflito) throw erro;
+
+        // Indice local desatualizado: reindice a pasta e envia como nova versao
+        console.warn('Conflito de nome no Box - reindice e nova tentativa:', nomeArquivo);
+        await listarFotosCmd(true);
+        const existente = CmdSync.foto_ids ? (CmdSync.foto_ids[baseNomeFoto(nomeArquivo)] || null) : null;
+        if (!existente) throw erro;
+        return await enviarFotoParaBoxInterno(fotoBase64, nomePonto, nomeArquivo, existente);
+    }
+}
+
+async function enviarFotoParaBoxInterno(fotoBase64, nomePonto, nomeArquivo, existenteForcado) {
     const FOTOS_FOLDER_ID = CmdSync.fotos_folder_id;
 
     // Garante indice de fotos carregado (evita duplicar arquivo)
     if (!CmdSync.foto_ids) await listarFotosCmd();
 
     // Se ja existe arquivo com esse nome, envia como nova versao (evita duplicar)
-    const existente = CmdSync.foto_ids ? (CmdSync.foto_ids[baseNomeFoto(nomeArquivo)] || null) : null;
+    const existente = existenteForcado ||
+        (CmdSync.foto_ids ? (CmdSync.foto_ids[baseNomeFoto(nomeArquivo)] || null) : null);
     const nomeFinal = existente ? existente.name : nomeArquivo;
 
     // Converter base64 para bytes
@@ -2429,7 +2456,7 @@ async function enviarFotoParaBox(fotoBase64, nomePonto, nomeArquivo) {
     
     if (!resp.ok) {
         const erro = await resp.text();
-        throw new Error(`Erro ao enviar foto: ${erro}`);
+        throw new Error(`Erro ao enviar foto [HTTP ${resp.status}]: ${erro}`);
     }
     
     const resultado = await resp.json();
